@@ -1,5 +1,5 @@
 {
-    "name": "config.angular.js",
+    "name": "binarta.config.angular",
     "version": "0.0.0",
     "main": "./src/config.js",
     "dependencies": {
