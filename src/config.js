@@ -14,6 +14,7 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
             Object.keys(expression).forEach(function (k) {
                 config[k] = expression[k];
             });
+            scope.appConfig = config;
             topicMessageDispatcher.firePersistently('config.initialized', config);
             topicMessageDispatcher.firePersistently('app.start', 'ok');
         }

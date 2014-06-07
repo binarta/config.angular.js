@@ -48,6 +48,10 @@ describe('config.js', function() {
                 expect(registry).toEqual(attrs.appConfig);
             });
 
+            it('expose config on scope', function() {
+                expect(scope.appConfig).toEqual({key:'value'});
+            });
+
             it('raises config.initialized event with the current config as payload', function() {
                 expect(dispatcher['config.initialized']).toEqual(attrs.appConfig);
             });
