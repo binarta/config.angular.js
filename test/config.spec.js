@@ -14,14 +14,21 @@ describe('config.js', function() {
         };
     });
 
-    describe('config service', function() {
-        beforeEach(function() {
-            config = ConfigFactory();
+    describe('config provider', function () {
+        var configProviderSpy;
+
+        beforeEach(function () {
+            angular.module('testApp', function () {})
+                .config(function (configProvider) {
+                    configProvider.key = 'value';
+                    configProviderSpy = configProvider;
+                });
+            module('config', 'testApp');
         });
 
-        it('test', function() {
-            expect(config).toEqual({});
-        });
+        it('config param is available', inject(function (config) {
+            expect(config.key).toEqual('value');
+        }));
     });
 
     describe('app-config directive', function() {

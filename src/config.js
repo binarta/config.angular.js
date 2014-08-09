@@ -1,10 +1,12 @@
 angular.module('config', [])
-    .factory('config', [ConfigFactory])
+    .provider('config', function configProvider() {
+        var config = {};
+        config.$get = function () {
+            return config;
+        };
+        return config;
+    })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory]);
-
-function ConfigFactory() {
-    return {};
-}
 
 function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
     return {
