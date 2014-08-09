@@ -20,7 +20,10 @@ describe('config.js', function() {
         beforeEach(function () {
             angular.module('testApp', function () {})
                 .config(function (configProvider) {
-                    configProvider.key = 'value';
+                    configProvider.add({
+                        key: 'value',
+                        foo: 'bar'
+                    });
                     configProviderSpy = configProvider;
                 });
             module('config', 'testApp');
@@ -28,6 +31,7 @@ describe('config.js', function() {
 
         it('config param is available', inject(function (config) {
             expect(config.key).toEqual('value');
+            expect(config.foo).toEqual('bar');
         }));
     });
 

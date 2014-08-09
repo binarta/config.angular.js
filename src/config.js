@@ -1,10 +1,16 @@
 angular.module('config', [])
     .provider('config', function configProvider() {
         var config = {};
-        config.$get = function () {
-            return config;
+        return {
+            add: function (params) {
+                Object.keys(params).forEach(function (k) {
+                    config[k] = params[k];
+                });
+            },
+            $get: function () {
+                return config;
+            }
         };
-        return config;
     })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory]);
 
