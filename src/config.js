@@ -12,7 +12,10 @@ angular.module('config', [])
             }
         };
     })
-    .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory]);
+    .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
+    .run(function(config, $http) {
+        if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
+    });
 
 function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
     return {
