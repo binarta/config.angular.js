@@ -5,7 +5,8 @@
     "angular": "1.2.5"
   },
   "devDependencies": {
-    "angular-mocks": "1.2.5"
+    "angular-mocks": "1.2.5",
+    "thk-rest-client-mock":"*"
   },
   "ignore": [
     "**/.*",

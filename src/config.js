@@ -13,6 +13,9 @@ angular.module('config', [])
         };
     })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
+    .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
+    .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
+    .directive('binConfig', ['configReader', 'configWriter', 'binTemplate', BinConfigDirectiveFactory])
     .run(function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     });
@@ -30,4 +33,66 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
             topicMessageDispatcher.firePersistently('app.start', 'ok');
         }
     };
+}
+
+function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) {
+    return function(args) {
+        var context = usecaseAdapterFactory(args.scope);
+        context.params = {
+            method:'GET',
+            url: config.baseUri + 'api/config/' + args.key,
+            withCredentials:true
+        };
+        context.success = args.success;
+        restServiceHandler(context);
+    }
+}
+
+function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) {
+    return function(args) {
+        var context = usecaseAdapterFactory(args.scope);
+        context.params = {
+            method:'POST',
+            url: config.baseUri + 'api/config',
+            data: {
+                id: args.key,
+                value: args.value
+            },
+            withCredentials: true
+        };
+        context.success = args.success;
+        restServiceHandler(context);
+    }
+}
+
+function BinConfigDirectiveFactory(configReader, configWriter, binTemplate) {
+    return {
+        restrict:'ECA',
+        template: '<div ng-include="templateUrl"></div>',
+        link: function(scope, els, attrs) {
+            scope.key = attrs.key;
+            configReader({
+                scope:scope,
+                key:attrs.key,
+                success: function(data) {
+                    scope.value = data.value;
+                }
+            });
+
+            scope.submit = function() {
+                configWriter({
+                    scope:scope,
+                    key: attrs.key,
+                    value: scope.value
+                })
+            };
+
+            binTemplate.setTemplateUrl({
+                scope:scope,
+                module:'config',
+                name:'config-entry.html',
+                permission:'config.resolve'
+            })
+        }
+    }
 }
