@@ -15,6 +15,7 @@ describe('config.js', function() {
 
     beforeEach(module('config'));
     beforeEach(module('rest.client'));
+    beforeEach(module('notifications'));
     beforeEach(module('angular.usecase.adapter'));
     beforeEach(module('testApp'));
     beforeEach(inject(function(_restServiceHandler_, _config_) {
@@ -170,10 +171,10 @@ describe('config.js', function() {
         var configWriter = jasmine.createSpy('configWriter');
         var binTemplate = jasmine.createSpyObj('binTemplate', ['setTemplateUrl']);
 
-        beforeEach(function() {
+        beforeEach(inject(function(_topicMessageDispatcher_) {
             scope = {};
-            sut = BinConfigDirectiveFactory(configReader, configWriter, binTemplate);
-        });
+            sut = BinConfigDirectiveFactory(configReader, configWriter, binTemplate, _topicMessageDispatcher_);
+        }));
 
         afterEach(function() {
             configReader.reset();
@@ -219,15 +220,28 @@ describe('config.js', function() {
                         scope.submit();
                     });
 
-                    it('test', function() {
+                    it('config writer was executed', function() {
                         expect(configWriter.calls[0].args[0].scope).toEqual(scope);
                         expect(configWriter.calls[0].args[0].key).toEqual(key);
                         expect(configWriter.calls[0].args[0].value).toEqual('V');
-                    })
+                    });
+
+                    describe('on success', function() {
+                        beforeEach(function() {
+                            configWriter.calls[0].args[0].success();
+                        });
+
+                        it('test', inject(function(_topicMessageDispatcherMock_) {
+                            expect(_topicMessageDispatcherMock_['system.success']).toEqual({
+                                code:'config.item.updated',
+                                default:'Config item was successfully updated'
+                            });
+                        }))
+                    });
                 });
             });
 
-            it('test', function() {
+            it('install the template url', function() {
                 expect(binTemplate.setTemplateUrl.calls[0].args[0]).toEqual({
                     scope:scope,
                     module:'config',

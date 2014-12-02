@@ -3,10 +3,10 @@
         <div class="form-group">
             <div class="input-group">
                 <label i18n code="config.{{key}}" default="{{key}}">{{var}}</label>
-                <input type="text" class="form-control" ng-model="value">
+                <input type="text" class="form-control" ng-model="$parent.value">
             </div>
         </div>
-        <button type="submit" class="btn btn-success" ng-disabled="working || !value" ng-click="submit()">
+        <button checkpoint-permission-for="config.store" type="submit" class="btn btn-success" ng-disabled="!permitted || working || !$parent.value" ng-click="submit()">
             <span ng-show="working"><i class="fa fa-spinner fa-spin fa-fw"></i></span>
             <span ng-hide="working"><i class="fa fa-check-circle fa-fw"></i></span>
             Update

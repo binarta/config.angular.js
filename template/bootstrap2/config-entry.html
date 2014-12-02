@@ -1,8 +1,8 @@
 <div class="config-entry-container">
     <form class="config-entry-form">
         <label i18n code="config.{{key}}" default="{{key}}">{{var}}</label>
-        <input type="text" ng-model="value">
-        <button type="submit" class="btn btn-success" ng-disabled="working || !value" ng-click="submit()">
+        <input type="text" ng-model="$parent.value">
+        <button checkpoint-permission-for="config.store" type="submit" class="btn btn-success" ng-disabled="!permitted || working || !$parent.value" ng-click="submit()">
             <span ng-show="working"><i class="fa fa-spinner fa-spin fa-fw"></i></span>
             <span ng-hide="working"><i class="fa fa-check-circle fa-fw"></i></span>
             Update

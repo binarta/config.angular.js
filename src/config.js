@@ -15,7 +15,7 @@ angular.module('config', [])
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'configWriter', 'binTemplate', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'configWriter', 'binTemplate', 'topicMessageDispatcher', BinConfigDirectiveFactory])
     .run(function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     });
@@ -65,7 +65,7 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
     }
 }
 
-function BinConfigDirectiveFactory(configReader, configWriter, binTemplate) {
+function BinConfigDirectiveFactory(configReader, configWriter, binTemplate, topicMessageDispatcher) {
     return {
         restrict:'ECA',
         template: '<div ng-include="templateUrl"></div>',
@@ -83,7 +83,13 @@ function BinConfigDirectiveFactory(configReader, configWriter, binTemplate) {
                 configWriter({
                     scope:scope,
                     key: attrs.key,
-                    value: scope.value
+                    value: scope.value,
+                    success: function() {
+                        topicMessageDispatcher.fire('system.success', {
+                            code:'config.item.updated',
+                            default:'Config item was successfully updated'
+                        })
+                    }
                 })
             };
 
