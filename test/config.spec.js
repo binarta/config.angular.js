@@ -186,6 +186,10 @@ describe('config.js', function() {
             expect(sut.restrict).toEqual('ECA');
         });
 
+        it('scope is created', function() {
+            expect(sut.scope).toBeTruthy();
+        });
+
         it('template is defined', function() {
             expect(sut.template).toEqual('<div ng-include="templateUrl"></div>');
         });

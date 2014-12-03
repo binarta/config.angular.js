@@ -68,6 +68,7 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
 function BinConfigDirectiveFactory(configReader, configWriter, binTemplate, topicMessageDispatcher) {
     return {
         restrict:'ECA',
+        scope:true,
         template: '<div ng-include="templateUrl"></div>',
         link: function(scope, els, attrs) {
             scope.key = attrs.key;
