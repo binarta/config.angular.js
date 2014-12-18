@@ -16,9 +16,9 @@ angular.module('config', [])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'configWriter', 'binTemplate', 'topicMessageDispatcher', BinConfigDirectiveFactory])
-    .run(function(config, $http) {
+    .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
-    });
+    }]);
 
 function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
     return {
