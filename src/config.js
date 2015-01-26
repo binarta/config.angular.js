@@ -72,6 +72,7 @@ function BinConfigDirectiveFactory(configReader, configWriter, binTemplate, topi
         template: '<div ng-include="templateUrl"></div>',
         link: function(scope, els, attrs) {
             scope.key = attrs.key;
+            scope.default = attrs.default;
             configReader({
                 scope:scope,
                 key:attrs.key,

@@ -196,13 +196,18 @@ describe('config.js', function() {
 
         describe('on link', function() {
             var key = 'K';
+            var $default = 'D'
 
             beforeEach(function() {
-                sut.link(scope, null, {key:key})
+                sut.link(scope, null, {key:key, default:$default})
             });
 
             it('key is exposed on scope', function() {
                 expect(scope.key).toEqual(key);
+            });
+
+            it('test', function() {
+                expect(scope.default).toEqual($default);
             });
 
             it('config reader is called', function() {

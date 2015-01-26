@@ -1,6 +1,6 @@
 <div class="config-entry-container">
     <form class="config-entry-form">
-        <label i18n code="config.{{key}}" default="{{key}}">{{var}}</label>
+        <label i18n code="config.{{key}}" default="{{default}}">{{var}}</label>
         <input type="text" ng-model="$parent.value">
         <button checkpoint-permission-for="config.store" type="submit" class="btn btn-success" ng-disabled="!permitted || working || !$parent.value" ng-click="submit()">
             <span ng-show="working"><i class="fa fa-spinner fa-spin fa-fw"></i></span>
