@@ -94,7 +94,7 @@ describe('config.js', function() {
 
         function execute() {
             sut({
-                scope: scope,
+                $scope: scope,
                 key:'K',
                 success: function(data) {success = data}
             });
@@ -107,7 +107,30 @@ describe('config.js', function() {
         it('rest service gets executed', function() {
             expect(request().params).toEqual({
                 method:'GET',
-                url:baseUri + 'api/config/K',
+                url:baseUri + 'api/entity/config/K',
+                params: {
+                    treatInputAsId:true,
+                    scope:''
+                },
+                withCredentials:true
+            });
+        });
+
+        it('when config scope is provided it is passed', function() {
+            sut({
+                $scope: scope,
+                key:'K',
+                scope:'s',
+                success: function(data) {success = data}
+            });
+
+            expect(request().params).toEqual({
+                method:'GET',
+                url:baseUri + 'api/entity/config/K',
+                params: {
+                    treatInputAsId:true,
+                    scope:'s'
+                },
                 withCredentials:true
             });
         });
@@ -191,15 +214,15 @@ describe('config.js', function() {
         });
 
         it('template is defined', function() {
-            expect(sut.template).toEqual('<div ng-include="templateUrl"></div>');
+            expect(sut.template).toBeUndefined();
         });
 
         describe('on link', function() {
             var key = 'K';
-            var i18nDefault = 'D'
+            var i18nDefault = 'D';
 
             beforeEach(function() {
-                sut.link(scope, null, {key:key, i18nDefault:i18nDefault})
+                sut.link(scope, null, {key:key, i18nDefault:i18nDefault, scope:'s'})
             });
 
             it('key is exposed on scope', function() {
@@ -212,7 +235,8 @@ describe('config.js', function() {
 
             it('config reader is called', function() {
                 expect(configReader.calls[0].args[0].key).toEqual(key);
-                expect(configReader.calls[0].args[0].scope).toEqual(scope);
+                expect(configReader.calls[0].args[0].$scope).toEqual(scope);
+                expect(configReader.calls[0].args[0].scope).toEqual('s');
             });
 
             describe('on config reader success', function() {
@@ -251,13 +275,8 @@ describe('config.js', function() {
             });
 
             it('install the template url', function() {
-                expect(binTemplate.setTemplateUrl.calls[0].args[0]).toEqual({
-                    scope:scope,
-                    module:'config',
-                    name: 'config-entry.html',
-                    permission:'config.resolve'
-                })
-            })
+                expect(binTemplate.setTemplateUrl.calls[0]).toBeUndefined();
+            });
 
         });
     });

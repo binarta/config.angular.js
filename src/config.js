@@ -15,7 +15,7 @@ angular.module('config', [])
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'configWriter', 'binTemplate', 'topicMessageDispatcher', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'configWriter', 'topicMessageDispatcher', BinConfigDirectiveFactory])
     .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
@@ -37,10 +37,14 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
 
 function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) {
     return function(args) {
-        var context = usecaseAdapterFactory(args.scope);
+        var context = usecaseAdapterFactory(args.$scope);
         context.params = {
             method:'GET',
-            url: config.baseUri + 'api/config/' + args.key,
+            url: config.baseUri + 'api/entity/config/' + args.key,
+            params: {
+                treatInputAsId:true,
+                scope:args.scope || ''
+            },
             withCredentials:true
         };
         context.success = args.success;
@@ -65,17 +69,17 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
     }
 }
 
-function BinConfigDirectiveFactory(configReader, configWriter, binTemplate, topicMessageDispatcher) {
+function BinConfigDirectiveFactory(configReader, configWriter, topicMessageDispatcher) {
     return {
         restrict:'ECA',
         scope:true,
-        template: '<div ng-include="templateUrl"></div>',
         link: function(scope, els, attrs) {
             scope.key = attrs.key;
             scope.i18nDefault = attrs.i18nDefault;
             configReader({
-                scope:scope,
+                $scope:scope,
                 key:attrs.key,
+                scope:attrs.scope,
                 success: function(data) {
                     scope.value = data.value;
                 }
@@ -94,13 +98,6 @@ function BinConfigDirectiveFactory(configReader, configWriter, binTemplate, topi
                     }
                 })
             };
-
-            binTemplate.setTemplateUrl({
-                scope:scope,
-                module:'config',
-                name:'config-entry.html',
-                permission:'config.resolve'
-            })
         }
     }
 }
