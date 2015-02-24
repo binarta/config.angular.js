@@ -154,9 +154,10 @@ describe('config.js', function() {
             sut = _configWriter_;
             usecaseAdapterFactory = _usecaseAdapterFactory_;
             sut({
-                scope:scope,
+                $scope:scope,
                 key: 'K',
                 value:'V',
+                scope:'S',
                 success: function(data) {success = data}
             });
         }));
@@ -171,10 +172,21 @@ describe('config.js', function() {
                 url: baseUri + 'api/config',
                 data: {
                     id: 'K',
-                    value: 'V'
+                    value: 'V',
+                    scope:'S'
                 },
                 withCredentials:true
             })
+        });
+
+        it('when no scope is provided it defaults to empty', function() {
+            sut({
+                $scope:scope,
+                key: 'K',
+                value:'V',
+                success: function(data) {success = data}
+            });
+            expect(request().params.data.scope).toEqual('');
         });
 
         describe('on success', function() {
@@ -192,17 +204,15 @@ describe('config.js', function() {
         var sut;
         var configReader = jasmine.createSpy('configReader');
         var configWriter = jasmine.createSpy('configWriter');
-        var binTemplate = jasmine.createSpyObj('binTemplate', ['setTemplateUrl']);
 
         beforeEach(inject(function(_topicMessageDispatcher_) {
             scope = {};
-            sut = BinConfigDirectiveFactory(configReader, configWriter, binTemplate, _topicMessageDispatcher_);
+            sut = BinConfigDirectiveFactory(configReader, configWriter, _topicMessageDispatcher_);
         }));
 
         afterEach(function() {
             configReader.reset();
             configWriter.reset();
-            binTemplate.setTemplateUrl.reset();
         });
 
         it('restrict to classes attributes and elements', function() {
@@ -211,10 +221,6 @@ describe('config.js', function() {
 
         it('scope is created', function() {
             expect(sut.scope).toBeTruthy();
-        });
-
-        it('template is defined', function() {
-            expect(sut.template).toBeUndefined();
         });
 
         describe('on link', function() {
@@ -254,7 +260,8 @@ describe('config.js', function() {
                     });
 
                     it('config writer was executed', function() {
-                        expect(configWriter.calls[0].args[0].scope).toEqual(scope);
+                        expect(configWriter.calls[0].args[0].$scope).toEqual(scope);
+                        expect(configWriter.calls[0].args[0].scope).toEqual('s');
                         expect(configWriter.calls[0].args[0].key).toEqual(key);
                         expect(configWriter.calls[0].args[0].value).toEqual('V');
                     });
@@ -273,11 +280,6 @@ describe('config.js', function() {
                     });
                 });
             });
-
-            it('install the template url', function() {
-                expect(binTemplate.setTemplateUrl.calls[0]).toBeUndefined();
-            });
-
         });
     });
 });

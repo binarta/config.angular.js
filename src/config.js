@@ -54,13 +54,14 @@ function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) 
 
 function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) {
     return function(args) {
-        var context = usecaseAdapterFactory(args.scope);
+        var context = usecaseAdapterFactory(args.$scope);
         context.params = {
             method:'POST',
             url: config.baseUri + 'api/config',
             data: {
                 id: args.key,
-                value: args.value
+                value: args.value || '',
+                scope: args.scope || ''
             },
             withCredentials: true
         };
@@ -87,9 +88,10 @@ function BinConfigDirectiveFactory(configReader, configWriter, topicMessageDispa
 
             scope.submit = function() {
                 configWriter({
-                    scope:scope,
+                    $scope:scope,
                     key: attrs.key,
                     value: scope.value,
+                    scope: attrs.scope,
                     success: function() {
                         topicMessageDispatcher.fire('system.success', {
                             code:'config.item.updated',
