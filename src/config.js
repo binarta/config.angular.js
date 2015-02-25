@@ -125,18 +125,18 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                 };
                 child.config = angular.copy(scope.config);
                 editModeRenderer.open({
-                    template:'<form>' +
+                    template:'<form ng-submit="save(config)">' +
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
                     '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
                     '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> <span ng-bind-html="var|trust"></span></small>' +
                     '</div>' +
-                    '</form>' +
 
                     '<div class="dropdown-menu-buttons">' +
-                    '<button type="submit" class="btn btn-primary" ng-click="save(config)">Opslaan</button>' +
+                    '<button type="submit" class="btn btn-primary">Opslaan</button>' +
                     '<button type="reset" class="btn btn-default" ng-click="close()">Annuleren</button>' +
-                    '</div>',
+                    '</div>' +
+                    '</form>',
                     scope:child
                 });
             }
