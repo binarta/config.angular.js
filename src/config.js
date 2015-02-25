@@ -15,7 +15,7 @@ angular.module('config', [])
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', 'ngRegisterTopicHandler', BinConfigDirectiveFactory])
     .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
@@ -70,26 +70,40 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
     }
 }
 
-function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter) {
+function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter, ngRegisterTopicHandler) {
     return {
         restrict:'A',
         scope:true,
         link: function(scope, element, attrs) {
             scope.key = attrs.key;
             scope.scope = attrs.scope;
+            scope.config = {};
             configReader({
                 $scope:scope,
                 key:attrs.key,
                 scope:attrs.scope,
                 success: function(data) {
                     scope.config = data;
-                    activeUserHasPermission({
-                        yes: function() {
-                            element.bind('click', scope.open);
-                        }
-                    }, 'config.store');
                 }
             });
+
+            ngRegisterTopicHandler(scope, 'edit.mode', function(editMode) {
+                activeUserHasPermission({
+                    no: function() {
+                        bind(false);
+                    },
+                    yes: function() {
+                        bind(editMode);
+                    },
+                    scope:scope
+                }, 'config.store');
+            });
+
+            function bind(yes) {
+                if (yes) element.bind('click', scope.open);
+                else element.unbind('click');
+            }
+
 
             scope.open = function() {
                 var child = scope.$new();
