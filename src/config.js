@@ -128,7 +128,7 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
                     '<input type="text" id="configEntry" ng-model="config.value">' +
-                    '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> {{var}}</small>' +
+                    '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> <span ng-bind-html="var|trust"></span></small>' +
                     '</div>' +
                     '</form>' +
 
