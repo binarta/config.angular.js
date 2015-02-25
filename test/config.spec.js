@@ -8,7 +8,7 @@ describe('config.js', function() {
             configProviderSpy = configProvider;
     });
 
-    var config, scope, dispatcher, rest;
+    var config, scope = {}, dispatcher, rest;
     var configProviderSpy;
     var baseUri = 'B/';
 
@@ -21,10 +21,8 @@ describe('config.js', function() {
     beforeEach(inject(function(_restServiceHandler_, _config_) {
         rest = _restServiceHandler_;
         _config_.baseUri = baseUri;
-        scope = {
-            $eval:function(it) {
-                return it;
-            }
+        scope.$eval = function(it) {
+            return it;
         };
         dispatcher = {
             firePersistently:function(topic, msg) {
@@ -204,11 +202,20 @@ describe('config.js', function() {
         var sut;
         var configReader = jasmine.createSpy('configReader');
         var configWriter = jasmine.createSpy('configWriter');
+        var activeUserHasPermission = jasmine.createSpy('activeUserHasPermission');
+        var editModeRenderer = jasmine.createSpyObj('editModeRenderer', ['open', 'close']);
+        var child;
+        var childScopeWasCreated = false;
 
-        beforeEach(inject(function(_topicMessageDispatcher_) {
-            scope = {};
-            sut = BinConfigDirectiveFactory(configReader, configWriter, _topicMessageDispatcher_);
-        }));
+        beforeEach(function() {
+            child = {id:'child'};
+            scope.id = 'scope';
+            scope.$new = function() {
+                childScopeWasCreated = true;
+                return child;
+            };
+            sut = BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter);
+        });
 
         afterEach(function() {
             configReader.reset();
@@ -216,7 +223,7 @@ describe('config.js', function() {
         });
 
         it('restrict to classes attributes and elements', function() {
-            expect(sut.restrict).toEqual('ECA');
+            expect(sut.restrict).toEqual('A');
         });
 
         it('scope is created', function() {
@@ -226,17 +233,23 @@ describe('config.js', function() {
         describe('on link', function() {
             var key = 'K';
             var i18nDefault = 'D';
+            var element = {
+                bind: function(event, cb) {
+                    this.event = event;
+                    this.cb = cb;
+                }
+            };
 
             beforeEach(function() {
-                sut.link(scope, null, {key:key, i18nDefault:i18nDefault, scope:'s'})
+                sut.link(scope, element, {key:key, i18nDefault:i18nDefault, scope:'s'})
             });
 
             it('key is exposed on scope', function() {
                 expect(scope.key).toEqual(key);
             });
 
-            it('test', function() {
-                expect(scope.i18nDefault).toEqual(i18nDefault);
+            it('config scope is exposed on scope', function() {
+                expect(scope.scope).toEqual('s');
             });
 
             it('config reader is called', function() {
@@ -251,32 +264,91 @@ describe('config.js', function() {
                 });
 
                 it('value is exposed on scope', function() {
-                    expect(scope.value).toEqual('V');
+                    expect(scope.config).toEqual({value:'V'});
                 });
 
-                describe('on submit', function() {
-                    beforeEach(function() {
-                        scope.submit();
+                describe('and edit.mode is toggled on', function() {
+                    beforeEach(inject(function(topicMessageDispatcher) {
+                        topicMessageDispatcher.fire('edit.mode', true)
+                    }));
+
+                    it('we check for config.store permission', function() {
+                        expect(activeUserHasPermission.calls[0].args[1]).toEqual('config.store');
                     });
 
-                    it('config writer was executed', function() {
-                        expect(configWriter.calls[0].args[0].$scope).toEqual(scope);
-                        expect(configWriter.calls[0].args[0].scope).toEqual('s');
-                        expect(configWriter.calls[0].args[0].key).toEqual(key);
-                        expect(configWriter.calls[0].args[0].value).toEqual('V');
-                    });
-
-                    describe('on success', function() {
+                    describe('when permitted', function() {
                         beforeEach(function() {
-                            configWriter.calls[0].args[0].success();
+                            activeUserHasPermission.calls[0].args[0].yes();
                         });
 
-                        it('test', inject(function(_topicMessageDispatcherMock_) {
-                            expect(_topicMessageDispatcherMock_['system.success']).toEqual({
-                                code:'config.item.updated',
-                                default:'Config item was successfully updated'
+                        it('we bound to click event', function() {
+                            expect(element.event).toEqual('click');
+                        });
+
+                        describe('and when click is fired', function() {
+                            beforeEach(function() {
+                                element.cb();
                             });
-                        }))
+
+                            function renderer() {
+                                return editModeRenderer.open.calls[0].args[0];
+                            }
+
+                            it('template is passed to edit mode renderer', function() {
+                                expect(renderer().template).toEqual(jasmine.any(String));
+                            });
+
+                            it('child scope is passed to edit mode renderer', function() {
+                                expect(childScopeWasCreated).toBeTruthy();
+                                expect(renderer().scope.id).toEqual('child');
+                            });
+
+                            it('edit mode renderer scope receives copy of config from parent scope', function() {
+                                expect(renderer().scope.config).toEqual(scope.config);
+                            });
+
+                            describe('and close is fired', function() {
+                                beforeEach(function() {
+                                    child.close();
+                                });
+
+                                it('then edit mode renderer is closed', function() {
+                                    expect(editModeRenderer.close.calls[0]).toBeDefined();
+                                });
+                            });
+
+                            describe('and save is fired', function() {
+                                beforeEach(function() {
+                                    child.save({value:'W'});
+                                });
+
+                                function writer() {
+                                    return configWriter.calls[0].args[0];
+                                }
+
+                                it('then writer is executed', function() {
+                                    expect(writer().$scope.id).toEqual('scope');
+                                    expect(writer().key).toEqual(scope.key);
+                                    expect(writer().value).toEqual('W');
+                                    expect(writer().scope).toEqual('s');
+                                });
+
+                                describe('and on success', function() {
+                                   beforeEach(function() {
+                                       editModeRenderer.close.reset();
+                                       writer().success();
+                                   });
+
+                                    it('renderer was closed', function() {
+                                        expect(editModeRenderer.close.calls[0]).toBeDefined();
+                                    });
+
+                                    it('updated value was exposed on scope', function() {
+                                        expect(scope.config.value).toEqual('W');
+                                    })
+                                });
+                            });
+                        });
                     });
                 });
             });

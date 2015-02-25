@@ -15,7 +15,7 @@ angular.module('config', [])
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'configWriter', 'topicMessageDispatcher', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', BinConfigDirectiveFactory])
     .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
@@ -70,36 +70,61 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
     }
 }
 
-function BinConfigDirectiveFactory(configReader, configWriter, topicMessageDispatcher) {
+function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter) {
     return {
-        restrict:'ECA',
+        restrict:'A',
         scope:true,
-        link: function(scope, els, attrs) {
+        link: function(scope, element, attrs) {
             scope.key = attrs.key;
-            scope.i18nDefault = attrs.i18nDefault;
+            scope.scope = attrs.scope;
             configReader({
                 $scope:scope,
                 key:attrs.key,
                 scope:attrs.scope,
                 success: function(data) {
-                    scope.value = data.value;
+                    scope.config = data;
+                    activeUserHasPermission({
+                        yes: function() {
+                            element.bind('click', scope.open);
+                        }
+                    }, 'config.store');
                 }
             });
 
-            scope.submit = function() {
-                configWriter({
-                    $scope:scope,
-                    key: attrs.key,
-                    value: scope.value,
-                    scope: attrs.scope,
-                    success: function() {
-                        topicMessageDispatcher.fire('system.success', {
-                            code:'config.item.updated',
-                            default:'Config item was successfully updated'
-                        })
-                    }
-                })
-            };
+            scope.open = function() {
+                var child = scope.$new();
+                child.close = function() {
+                    editModeRenderer.close();
+                };
+                child.save = function(args) {
+                    configWriter({
+                        $scope:scope,
+                        key:scope.key,
+                        value: args.value || '',
+                        scope: scope.scope || '',
+                        success: function() {
+                            editModeRenderer.close();
+                            scope.config.value = args.value;
+                        }
+                    })
+                };
+                child.config = angular.copy(scope.config);
+                editModeRenderer.open({
+                    template:'<form>' +
+                    '<div class="form-group">' +
+                    '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
+                    '<input type="text" id="configEntry" ng-model="config.value">' +
+                    '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> {{var}}</small>' +
+                    '</div>' +
+                    '</form>' +
+
+                    '<div class="dropdown-menu-buttons">' +
+                    '<button type="submit" class="btn btn-primary" ng-click="save(config)">Opslaan</button>' +
+                    '<button type="reset" class="btn btn-default" ng-click="close()">Annuleren</button>' +
+                    '</div>',
+                    scope:child
+                });
+            }
         }
     }
 }
