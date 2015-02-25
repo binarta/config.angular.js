@@ -233,7 +233,6 @@ describe('config.js', function() {
 
         describe('on link', function() {
             var key = 'K';
-            var i18nDefault = 'D';
             var element;
             var event, cb;
             var isBound = false;
@@ -250,7 +249,7 @@ describe('config.js', function() {
                         isBound = false;
                     }
                 };
-                sut.link(scope, element, {key:key, i18nDefault:i18nDefault, scope:'s'})
+                sut.link(scope, element, {key:key, scope:'s', inputType:'t'})
             });
 
             afterEach(function() {
@@ -266,9 +265,13 @@ describe('config.js', function() {
                 expect(scope.scope).toEqual('s');
             });
 
-            it('test', function() {
+            it('config is initialized empty', function() {
                 expect(scope.config).toEqual({});
-            })
+            });
+
+            it('input type is exposed on scope', function() {
+                expect(scope.inputType).toEqual('t');
+            });
 
             it('config reader is called', function() {
                 expect(configReader.calls[0].args[0].key).toEqual(key);
@@ -405,6 +408,12 @@ describe('config.js', function() {
                         expect(isBound).toBeFalsy();
                     })
                 });
+            })
+
+            it('when linking without input type we default to text', function() {
+                sut.link(scope, element, {key:key, scope:'s'});
+
+                expect(scope.inputType).toEqual('text');
             })
         });
     });

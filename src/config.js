@@ -78,6 +78,7 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
             scope.key = attrs.key;
             scope.scope = attrs.scope;
             scope.config = {};
+            scope.inputType = attrs.inputType || 'text';
             configReader({
                 $scope:scope,
                 key:attrs.key,
@@ -127,7 +128,7 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                     template:'<form>' +
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
-                    '<input type="text" id="configEntry" ng-model="config.value">' +
+                    '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
                     '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> <span ng-bind-html="var|trust"></span></small>' +
                     '</div>' +
                     '</form>' +
