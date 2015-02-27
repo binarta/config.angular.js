@@ -198,6 +198,62 @@ describe('config.js', function() {
         });
     });
 
+    describe('binConfigController', function () {
+        var ctrl;
+        var configReader = jasmine.createSpy('configReader');
+        var configWriter = jasmine.createSpy('configWriter');
+        var key = 'key';
+
+        beforeEach(inject(function ($controller) {
+            ctrl = $controller('binConfigController', {$scope: scope, configReader: configReader, configWriter: configWriter});
+        }));
+
+        afterEach(function() {
+            configReader.reset();
+            configWriter.reset();
+        });
+
+        describe('on init', function () {
+            beforeEach(function () {
+                ctrl.init({key: key, scope: 'public'});
+            });
+
+            it('reader puts value on scope', function () {
+                expect(configReader.calls[0].args[0].key).toEqual(key);
+                expect(configReader.calls[0].args[0].$scope).toEqual(scope);
+                expect(configReader.calls[0].args[0].scope).toEqual('public');
+            });
+
+            describe('on config reader success', function() {
+                beforeEach(function() {
+                    configReader.calls[0].args[0].success({value:'value'});
+                });
+
+                it('value is exposed on scope', function() {
+                    expect(scope.config).toEqual({value:'value'});
+                });
+            });
+
+            describe('on submit', function () {
+                beforeEach(function () {
+                    scope.config.value = 'new value';
+                    ctrl.submit();
+                });
+
+                function writer() {
+                    return configWriter.calls[0].args[0];
+                }
+
+                it('then writer is executed', function() {
+                    expect(writer().$scope).toEqual(scope);
+                    expect(writer().key).toEqual(key);
+                    expect(writer().value).toEqual('new value');
+                    expect(writer().scope).toEqual('public');
+                });
+            });
+        });
+    });
+
     describe('bin-config', function() {
         var sut;
         var configReader = jasmine.createSpy('configReader');
@@ -408,7 +464,7 @@ describe('config.js', function() {
                         expect(isBound).toBeFalsy();
                     })
                 });
-            })
+            });
 
             it('when linking without input type we default to text', function() {
                 sut.link(scope, element, {key:key, scope:'s'});

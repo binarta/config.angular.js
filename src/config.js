@@ -16,6 +16,7 @@ angular.module('config', [])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', 'ngRegisterTopicHandler', BinConfigDirectiveFactory])
+    .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
     .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
@@ -68,6 +69,33 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
         context.success = args.success;
         restServiceHandler(context);
     }
+}
+
+function BinConfigController ($scope, configReader, configWriter) {
+    var key, scope;
+
+    this.init = function (args) {
+        key = args.key;
+        scope = args.scope || '';
+
+        configReader({
+            $scope:$scope,
+            key:key,
+            scope:scope,
+            success: function(data) {
+                $scope.config = data;
+            }
+        });
+    };
+
+    this.submit = function () {
+        configWriter({
+            $scope:$scope,
+            key:key,
+            value: $scope.config.value || '',
+            scope: scope
+        });
+    };
 }
 
 function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter, ngRegisterTopicHandler) {
