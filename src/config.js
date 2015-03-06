@@ -16,6 +16,7 @@ angular.module('config', [])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', 'ngRegisterTopicHandler', BinConfigDirectiveFactory])
+    .directive('binConfigIf', ['config', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
     .run(['config', '$http', function(config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
@@ -166,6 +167,20 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                     '</div>' +
                     '</form>',
                     scope:child
+                });
+            }
+        }
+    }
+}
+
+function BinConfigIfDirectiveFactory(config) {
+    return {
+        restrict: 'A',
+        transclude: 'element',
+        link: function (scope, element, attrs, ctrl, transclude) {
+            if (config[attrs.binConfigIf] == scope.$eval(attrs.equals)) {
+                transclude(function (clone) {
+                    element.after(clone);
                 });
             }
         }

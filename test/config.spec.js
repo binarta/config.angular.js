@@ -254,7 +254,7 @@ describe('config.js', function() {
         });
     });
 
-    describe('bin-config', function() {
+    describe('bin-config directive', function() {
         var sut;
         var configReader = jasmine.createSpy('configReader');
         var configWriter = jasmine.createSpy('configWriter');
@@ -471,6 +471,45 @@ describe('config.js', function() {
 
                 expect(scope.inputType).toEqual('text');
             })
+        });
+    });
+
+    describe('bin-config-if directive', function () {
+        var html, scope, config, $rootScope, $compile, node, contents;
+
+        beforeEach(inject(function (_config_, _$rootScope_, _$compile_) {
+            config = _config_;
+            $rootScope = _$rootScope_;
+            $compile = _$compile_;
+            html = '<div><div bin-config-if="value" equals="true">{{"transcluded content"}}</div></div>';
+        }));
+
+        describe('true case', function () {
+            beforeEach(function () {
+                config.value = true;
+                node = $compile(html)($rootScope);
+                contents = node.contents();
+                $rootScope.$digest();
+            });
+
+            it('transcluded content is compiled', function () {
+                expect(contents[0].nodeName).toEqual('#comment');
+                expect(contents[1].firstChild.nodeValue).toEqual('transcluded content');
+            });
+        });
+
+        describe('false case', function () {
+            beforeEach(function () {
+                config.value = false;
+                node = $compile(html)($rootScope);
+                contents = node.contents();
+                $rootScope.$digest();
+            });
+
+            it('no transcluded content', function () {
+                expect(contents[0].nodeName).toEqual('#comment');
+                expect(contents[1]).toBeUndefined();
+            });
         });
     });
 });
