@@ -1,4 +1,4 @@
-angular.module('config', [])
+angular.module('config', ['notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
     .provider('config', function configProvider() {
         var config = {};
         return {

@@ -12,6 +12,8 @@ describe('config.js', function() {
     var configProviderSpy;
     var baseUri = 'B/';
 
+    angular.module('checkpoint', []);
+    angular.module('toggle.edit.mode', []);
 
     beforeEach(module('config'));
     beforeEach(module('rest.client'));
