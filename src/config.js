@@ -16,9 +16,9 @@ angular.module('config', ['notifications', 'rest.client', 'angular.usecase.adapt
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', 'ngRegisterTopicHandler', BinConfigDirectiveFactory])
-    .directive('binConfigIf', ['config', BinConfigIfDirectiveFactory])
+    .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
-    .run(['config', '$http', function(config, $http) {
+    .run(['config', '$http', function (config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
 
@@ -38,27 +38,30 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
 }
 
 function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) {
-    return function(args) {
+    return function (args) {
         var context = usecaseAdapterFactory(args.$scope);
         context.params = {
-            method:'GET',
+            method: 'GET',
             url: config.baseUri + 'api/entity/config/' + args.key,
             params: {
-                treatInputAsId:true,
-                scope:args.scope || ''
+                treatInputAsId: true,
+                scope: args.scope || ''
             },
-            withCredentials:true
+            withCredentials: true
         };
-        context.success = args.success;
+        context.success = function (data) {
+            if (args.scope == 'public') config[args.key] = data.value;
+            if (args.success) args.success(data);
+        };
         restServiceHandler(context);
     }
 }
 
 function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) {
-    return function(args) {
+    return function (args) {
         var context = usecaseAdapterFactory(args.$scope);
         context.params = {
-            method:'POST',
+            method: 'POST',
             url: config.baseUri + 'api/config',
             data: {
                 id: args.key,
@@ -67,12 +70,15 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
             },
             withCredentials: true
         };
-        context.success = args.success;
+        context.success = function (data) {
+            if (args.scope == 'public') config[args.key] = args.value;
+            if (args.success) args.success(data);
+        };
         restServiceHandler(context);
     }
 }
 
-function BinConfigController ($scope, configReader, configWriter) {
+function BinConfigController($scope, configReader, configWriter) {
     var key, scope;
 
     this.init = function (args) {
@@ -80,10 +86,10 @@ function BinConfigController ($scope, configReader, configWriter) {
         scope = args.scope || '';
 
         configReader({
-            $scope:$scope,
-            key:key,
-            scope:scope,
-            success: function(data) {
+            $scope: $scope,
+            key: key,
+            scope: scope,
+            success: function (data) {
                 $scope.config = data;
             }
         });
@@ -91,8 +97,8 @@ function BinConfigController ($scope, configReader, configWriter) {
 
     this.submit = function () {
         configWriter({
-            $scope:$scope,
-            key:key,
+            $scope: $scope,
+            key: key,
             value: $scope.config.value || '',
             scope: scope
         });
@@ -101,31 +107,31 @@ function BinConfigController ($scope, configReader, configWriter) {
 
 function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter, ngRegisterTopicHandler) {
     return {
-        restrict:'A',
-        scope:true,
-        link: function(scope, element, attrs) {
+        restrict: 'A',
+        scope: true,
+        link: function (scope, element, attrs) {
             scope.key = attrs.key;
             scope.scope = attrs.scope;
             scope.config = {};
             scope.inputType = attrs.inputType || 'text';
             configReader({
-                $scope:scope,
-                key:attrs.key,
-                scope:attrs.scope,
-                success: function(data) {
+                $scope: scope,
+                key: attrs.key,
+                scope: attrs.scope,
+                success: function (data) {
                     scope.config = data;
                 }
             });
 
-            ngRegisterTopicHandler(scope, 'edit.mode', function(editMode) {
+            ngRegisterTopicHandler(scope, 'edit.mode', function (editMode) {
                 activeUserHasPermission({
-                    no: function() {
+                    no: function () {
                         bind(false);
                     },
-                    yes: function() {
+                    yes: function () {
                         bind(editMode);
                     },
-                    scope:scope
+                    scope: scope
                 }, 'config.store');
             });
 
@@ -135,18 +141,18 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
             }
 
 
-            scope.open = function() {
+            scope.open = function () {
                 var child = scope.$new();
-                child.close = function() {
+                child.close = function () {
                     editModeRenderer.close();
                 };
-                child.save = function(args) {
+                child.save = function (args) {
                     configWriter({
-                        $scope:scope,
-                        key:scope.key,
+                        $scope: scope,
+                        key: scope.key,
                         value: args.value || '',
                         scope: scope.scope || '',
-                        success: function() {
+                        success: function () {
                             editModeRenderer.close();
                             scope.config.value = args.value;
                         }
@@ -154,7 +160,7 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                 };
                 child.config = angular.copy(scope.config);
                 editModeRenderer.open({
-                    template:'<form ng-submit="save(config)">' +
+                    template: '<form ng-submit="save(config)">' +
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
                     '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
@@ -166,23 +172,48 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                     '<button type="reset" class="btn btn-default" ng-click="close()">Annuleren</button>' +
                     '</div>' +
                     '</form>',
-                    scope:child
+                    scope: child
                 });
             }
         }
     }
 }
 
-function BinConfigIfDirectiveFactory(config) {
+function BinConfigIfDirectiveFactory(config, configReader) {
     return {
         restrict: 'A',
         transclude: 'element',
+        priority: 600,
         link: function (scope, element, attrs, ctrl, transclude) {
-            if (config[attrs.binConfigIf] == scope.$eval(attrs.equals)) {
-                transclude(function (clone) {
-                    element.after(clone);
+            var key = attrs.binConfigIf;
+            var value = attrs.equals;
+            var childScope, childElement;
+
+            if (config[key] == undefined) {
+                configReader({
+                    $scope: scope,
+                    key: key,
+                    scope: 'public'
                 });
             }
+
+            scope.$watch(function () {
+                return config[key] == scope.$eval(value);
+            }, function (value) {
+                if (value) {
+                    transclude(function (clone, newScope) {
+                        childScope = newScope;
+                        childElement = clone;
+                        element.after(clone);
+                    });
+                } else {
+                    if (childElement) {
+                        childElement.remove();
+                        childScope.$destroy();
+                    }
+                }
+            });
+
         }
     }
 }
