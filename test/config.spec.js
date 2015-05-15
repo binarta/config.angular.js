@@ -26,6 +26,9 @@ describe('config.js', function () {
 
         beforeEach(inject(function (_restServiceHandler_, _config_) {
             rest = _restServiceHandler_;
+            rest.andReturn({
+                success: function () {}
+            });
             config = _config_;
             _config_.baseUri = baseUri;
             scope.$eval = function (it) {
@@ -94,11 +97,10 @@ describe('config.js', function () {
             beforeEach(inject(function (_configReader_, _usecaseAdapterFactory_) {
                 sut = _configReader_;
                 usecaseAdapterFactory = _usecaseAdapterFactory_;
-                execute();
             }));
 
             function execute() {
-                sut({
+                return sut({
                     $scope: scope,
                     key: 'K',
                     success: function (data) {
@@ -108,10 +110,14 @@ describe('config.js', function () {
             }
 
             it('usecase adapter factory receives scope', function () {
+                execute();
+
                 expect(usecaseAdapterFactory.calls[0].args[0]).toEqual(scope);
             });
 
             it('rest service gets executed', function () {
+                execute();
+
                 expect(request().params).toEqual({
                     method: 'GET',
                     url: baseUri + 'api/entity/config/K',
@@ -123,7 +129,13 @@ describe('config.js', function () {
                 });
             });
 
+            it('rest service returns promise', function () {
+                execute().success();
+            });
+
             it('when config scope is provided it is passed', function () {
+                execute();
+
                 sut({
                     $scope: scope,
                     key: 'K',
@@ -146,6 +158,8 @@ describe('config.js', function () {
 
             describe('on success', function () {
                 beforeEach(function () {
+                    execute();
+
                     request().success('D');
                 });
 
@@ -178,10 +192,8 @@ describe('config.js', function () {
             var sut, usecaseAdapterFactory;
             var success;
 
-            beforeEach(inject(function (_configWriter_, _usecaseAdapterFactory_) {
-                sut = _configWriter_;
-                usecaseAdapterFactory = _usecaseAdapterFactory_;
-                sut({
+            function execute() {
+                return sut({
                     $scope: scope,
                     key: 'K',
                     value: 'V',
@@ -190,13 +202,22 @@ describe('config.js', function () {
                         success = data
                     }
                 });
+            }
+
+            beforeEach(inject(function (_configWriter_, _usecaseAdapterFactory_) {
+                sut = _configWriter_;
+                usecaseAdapterFactory = _usecaseAdapterFactory_;
             }));
 
             it('usecase adapter factory receives scope', function () {
+                execute();
+
                 expect(usecaseAdapterFactory.calls[0].args[0]).toEqual(scope);
             });
 
             it('rest service gets executed', function () {
+                execute();
+
                 expect(request().params).toEqual({
                     method: 'POST',
                     url: baseUri + 'api/config',
@@ -207,6 +228,10 @@ describe('config.js', function () {
                     },
                     withCredentials: true
                 })
+            });
+
+            it('rest service returns promise', function () {
+                execute().success();
             });
 
             it('when no scope is provided it defaults to empty', function () {
@@ -223,6 +248,8 @@ describe('config.js', function () {
 
             describe('on success', function () {
                 beforeEach(function () {
+                    execute();
+
                     request().success('D')
                 });
 

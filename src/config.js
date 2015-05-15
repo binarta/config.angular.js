@@ -53,7 +53,7 @@ function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) 
             if (args.scope == 'public') config[args.key] = data.value;
             if (args.success) args.success(data);
         };
-        restServiceHandler(context);
+        return restServiceHandler(context);
     }
 }
 
@@ -74,7 +74,7 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
             if (args.scope == 'public') config[args.key] = args.value;
             if (args.success) args.success(data);
         };
-        restServiceHandler(context);
+        return restServiceHandler(context);
     }
 }
 
