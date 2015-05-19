@@ -30,6 +30,7 @@ describe('config.js', function () {
                 success: function () {}
             });
             config = _config_;
+            config.namespace = 'namespace';
             _config_.baseUri = baseUri;
             scope.$eval = function (it) {
                 return it;
@@ -56,7 +57,6 @@ describe('config.js', function () {
             var directive, element, attrs, registry;
 
             beforeEach(function () {
-                config = {};
                 attrs = {};
                 registry = {};
                 directive = AppConfigDirectiveFactory(registry, dispatcher);
@@ -125,7 +125,10 @@ describe('config.js', function () {
                         treatInputAsId: true,
                         scope: ''
                     },
-                    withCredentials: true
+                    withCredentials: true,
+                    headers: {
+                        'X-Namespace': 'namespace'
+                    }
                 });
             });
 
@@ -152,7 +155,10 @@ describe('config.js', function () {
                         treatInputAsId: true,
                         scope: 's'
                     },
-                    withCredentials: true
+                    withCredentials: true,
+                    headers: {
+                        'X-Namespace': 'namespace'
+                    }
                 });
             });
 
@@ -226,7 +232,10 @@ describe('config.js', function () {
                         value: 'V',
                         scope: 'S'
                     },
-                    withCredentials: true
+                    withCredentials: true,
+                    headers: {
+                        'X-Namespace': 'namespace'
+                    }
                 })
             });
 

@@ -47,7 +47,10 @@ function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) 
                 treatInputAsId: true,
                 scope: args.scope || ''
             },
-            withCredentials: true
+            withCredentials: true,
+            headers: {
+                'X-Namespace': config.namespace
+            }
         };
         context.success = function (data) {
             if (args.scope == 'public') config[args.key] = data.value;
@@ -68,7 +71,10 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
                 value: args.value || '',
                 scope: args.scope || ''
             },
-            withCredentials: true
+            withCredentials: true,
+            headers: {
+                'X-Namespace': config.namespace
+            }
         };
         context.success = function (data) {
             if (args.scope == 'public') config[args.key] = args.value;
