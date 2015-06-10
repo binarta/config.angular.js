@@ -161,7 +161,7 @@ function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer,
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.label" for="configEntry">{{var}}</label>' +
                     '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
-                    '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> <span ng-bind-html="var"></span></small>' +
+                    '<small i18n read-only code="config.{{key}}.info"><i class="fa fa-info-circle"></i> <span ng-bind-html="var"></span></small>' +
                     '</div>' +
 
                     '<div class="dropdown-menu-buttons">' +
