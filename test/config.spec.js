@@ -352,25 +352,24 @@ describe('config.js', function () {
             var sut;
             var configReader = jasmine.createSpy('configReader');
             var configWriter = jasmine.createSpy('configWriter');
-            var activeUserHasPermission = jasmine.createSpy('activeUserHasPermission');
             var editModeRenderer = jasmine.createSpyObj('editModeRenderer', ['open', 'close']);
             var child;
             var childScopeWasCreated = false;
+            var editMode = jasmine.createSpyObj('editMode', ['bindEvent']);
 
-            beforeEach(inject(function (ngRegisterTopicHandler) {
+            beforeEach(function () {
                 child = {id: 'child'};
                 scope.id = 'scope';
                 scope.$new = function () {
                     childScopeWasCreated = true;
                     return child;
                 };
-                sut = BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter, ngRegisterTopicHandler);
-            }));
+                sut = BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer, editMode);
+            });
 
             afterEach(function () {
                 configReader.reset();
                 configWriter.reset();
-                activeUserHasPermission.reset();
             });
 
             it('restrict to classes attributes and elements', function () {
@@ -383,28 +382,16 @@ describe('config.js', function () {
 
             describe('on link', function () {
                 var key = 'K';
-                var element;
+                var element = 'element';
                 var event, cb;
                 var isBound = false;
 
                 beforeEach(function () {
-                    element = {
-                        bind: function ($event, $cb) {
-                            event = $event;
-                            cb = $cb;
-                            isBound = true;
-                        },
-                        unbind: function ($event) {
-                            event = $event;
-                            isBound = false;
-                        }
-                    };
                     sut.link(scope, element, {key: key, scope: 's', inputType: 't'})
                 });
 
                 afterEach(function () {
                     event = undefined;
-                    cb = undefined;
                 });
 
                 it('key is exposed on scope', function () {
@@ -439,124 +426,77 @@ describe('config.js', function () {
                     });
                 });
 
-                it('permission check did not happen', function () {
-                    expect(activeUserHasPermission.calls[0]).toBeUndefined();
+                it('install editMode event binder', function () {
+                    expect(editMode.bindEvent).toHaveBeenCalledWith({
+                        scope: scope,
+                        element: element,
+                        permission: 'config.store',
+                        onClick: jasmine.any(Function)
+                    });
                 });
 
-                describe('and edit.mode is toggled on', function () {
-                    beforeEach(inject(function (topicRegistryMock) {
-                        topicRegistryMock['edit.mode'](true);
-                    }));
-
-                    it('scope is passed', function () {
-                        expect(activeUserHasPermission.calls[0].args[0].scope).toEqual(scope);
+                describe('and when click is fired', function () {
+                    beforeEach(function () {
+                        editMode.bindEvent.calls[0].args[0].onClick();
                     });
 
-                    it('we check for config.store permission', function () {
-                        expect(activeUserHasPermission.calls[0].args[1]).toEqual('config.store');
+                    function renderer() {
+                        return editModeRenderer.open.calls[0].args[0];
+                    }
+
+                    it('template is passed to edit mode renderer', function () {
+                        expect(renderer().template).toEqual(jasmine.any(String));
                     });
 
-                    describe('when permitted', function () {
+                    it('child scope is passed to edit mode renderer', function () {
+                        expect(childScopeWasCreated).toBeTruthy();
+                        expect(renderer().scope.id).toEqual('child');
+                    });
+
+                    it('edit mode renderer scope receives copy of config from parent scope', function () {
+                        expect(renderer().scope.config).toEqual(scope.config);
+                    });
+
+                    describe('and close is fired', function () {
                         beforeEach(function () {
-                            activeUserHasPermission.calls[0].args[0].yes();
+                            child.close();
                         });
 
-                        it('we bound to click event', function () {
-                            expect(event).toEqual('click');
+                        it('then edit mode renderer is closed', function () {
+                            expect(editModeRenderer.close.calls[0]).toBeDefined();
+                        });
+                    });
+
+                    describe('and save is fired', function () {
+                        beforeEach(function () {
+                            child.save({value: 'W'});
                         });
 
-                        describe('and when click is fired', function () {
+                        function writer() {
+                            return configWriter.calls[0].args[0];
+                        }
+
+                        it('then writer is executed', function () {
+                            expect(writer().$scope.id).toEqual('scope');
+                            expect(writer().key).toEqual(scope.key);
+                            expect(writer().value).toEqual('W');
+                            expect(writer().scope).toEqual('s');
+                        });
+
+                        describe('and on success', function () {
                             beforeEach(function () {
-                                cb();
+                                editModeRenderer.close.reset();
+                                writer().success();
                             });
 
-                            function renderer() {
-                                return editModeRenderer.open.calls[0].args[0];
-                            }
-
-                            it('template is passed to edit mode renderer', function () {
-                                expect(renderer().template).toEqual(jasmine.any(String));
+                            it('renderer was closed', function () {
+                                expect(editModeRenderer.close.calls[0]).toBeDefined();
                             });
 
-                            it('child scope is passed to edit mode renderer', function () {
-                                expect(childScopeWasCreated).toBeTruthy();
-                                expect(renderer().scope.id).toEqual('child');
-                            });
-
-                            it('edit mode renderer scope receives copy of config from parent scope', function () {
-                                expect(renderer().scope.config).toEqual(scope.config);
-                            });
-
-                            describe('and close is fired', function () {
-                                beforeEach(function () {
-                                    child.close();
-                                });
-
-                                it('then edit mode renderer is closed', function () {
-                                    expect(editModeRenderer.close.calls[0]).toBeDefined();
-                                });
-                            });
-
-                            describe('and save is fired', function () {
-                                beforeEach(function () {
-                                    child.save({value: 'W'});
-                                });
-
-                                function writer() {
-                                    return configWriter.calls[0].args[0];
-                                }
-
-                                it('then writer is executed', function () {
-                                    expect(writer().$scope.id).toEqual('scope');
-                                    expect(writer().key).toEqual(scope.key);
-                                    expect(writer().value).toEqual('W');
-                                    expect(writer().scope).toEqual('s');
-                                });
-
-                                describe('and on success', function () {
-                                    beforeEach(function () {
-                                        editModeRenderer.close.reset();
-                                        writer().success();
-                                    });
-
-                                    it('renderer was closed', function () {
-                                        expect(editModeRenderer.close.calls[0]).toBeDefined();
-                                    });
-
-                                    it('updated value was exposed on scope', function () {
-                                        expect(scope.config.value).toEqual('W');
-                                    })
-                                });
-                            });
+                            it('updated value was exposed on scope', function () {
+                                expect(scope.config.value).toEqual('W');
+                            })
                         });
-
-                        describe('and edit.mode is toggled off', function () {
-                            beforeEach(inject(function (topicRegistryMock) {
-                                topicRegistryMock['edit.mode'](false);
-                            }));
-
-                            describe('and we are permitted', function () {
-                                beforeEach(function () {
-                                    activeUserHasPermission.calls[1].args[0].yes();
-                                });
-
-                                it('then we unbind from click', function () {
-                                    expect(event).toEqual('click');
-                                    expect(isBound).toBeFalsy();
-                                })
-                            });
-                        });
-                    });
-
-                    describe('when not permitted', function () {
-                        beforeEach(function () {
-                            activeUserHasPermission.calls[0].args[0].no();
-                        });
-
-                        it('then click is unbound', function () {
-                            expect(event).toEqual('click');
-                            expect(isBound).toBeFalsy();
-                        })
                     });
                 });
 

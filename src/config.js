@@ -15,7 +15,7 @@ angular.module('config', ['notifications', 'rest.client', 'angular.usecase.adapt
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'activeUserHasPermission', 'editModeRenderer', 'configWriter', 'ngRegisterTopicHandler', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
     .run(['config', '$http', function (config, $http) {
@@ -111,7 +111,7 @@ function BinConfigController($scope, configReader, configWriter) {
     };
 }
 
-function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editModeRenderer, configWriter, ngRegisterTopicHandler) {
+function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer, editMode) {
     return {
         restrict: 'A',
         scope: true,
@@ -129,56 +129,47 @@ function BinConfigDirectiveFactory(configReader, activeUserHasPermission, editMo
                 }
             });
 
-            ngRegisterTopicHandler(scope, 'edit.mode', function (editMode) {
-                activeUserHasPermission({
-                    no: function () {
-                        bind(false);
-                    },
-                    yes: function () {
-                        bind(editMode);
-                    },
-                    scope: scope
-                }, 'config.store');
+            editMode.bindEvent({
+                scope: scope,
+                element: element,
+                permission: 'config.store',
+                onClick: open
             });
 
-            function bind(yes) {
-                if (yes) element.bind('click', scope.open);
-                else element.unbind('click');
-            }
+            function open() {
+                var rendererScope = angular.extend(scope.$new(), {
+                    close: function () {
+                        editModeRenderer.close();
+                    },
+                    save: function (args) {
+                        configWriter({
+                            $scope: scope,
+                            key: scope.key,
+                            value: args.value || '',
+                            scope: scope.scope || '',
+                            success: function () {
+                                editModeRenderer.close();
+                                scope.config.value = args.value;
+                            }
+                        })
+                    },
+                    config: angular.copy(scope.config)
+                });
 
-
-            scope.open = function () {
-                var child = scope.$new();
-                child.close = function () {
-                    editModeRenderer.close();
-                };
-                child.save = function (args) {
-                    configWriter({
-                        $scope: scope,
-                        key: scope.key,
-                        value: args.value || '',
-                        scope: scope.scope || '',
-                        success: function () {
-                            editModeRenderer.close();
-                            scope.config.value = args.value;
-                        }
-                    })
-                };
-                child.config = angular.copy(scope.config);
                 editModeRenderer.open({
                     template: '<form ng-submit="save(config)">' +
                     '<div class="form-group">' +
-                    '<label i18n read-only code="config.{{key}}.name" for="configEntry">{{var}}</label>' +
+                    '<label i18n read-only code="config.{{key}}.label" for="configEntry">{{var}}</label>' +
                     '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
                     '<small i18n read-only code="config.{{key}}.description"><i class="fa fa-info-circle"></i> <span ng-bind-html="var"></span></small>' +
                     '</div>' +
 
                     '<div class="dropdown-menu-buttons">' +
-                    '<button type="submit" class="btn btn-primary">Opslaan</button>' +
-                    '<button type="reset" class="btn btn-default" ng-click="close()">Annuleren</button>' +
+                    '<button type="submit" class="btn btn-primary" i18n code="clerk.menu.save.button" read-only>{{var}}</button>' +
+                    '<button type="reset" class="btn btn-default" ng-click="close()" i18n code="clerk.menu.cancel.button" read-only>{{var}}</button>' +
                     '</div>' +
                     '</form>',
-                    scope: child
+                    scope: rendererScope
                 });
             }
         }
