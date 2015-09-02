@@ -56,6 +56,9 @@ function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) 
             if (args.scope == 'public') config[args.key] = data.value;
             if (args.success) args.success(data);
         };
+        context.notFound = function () {
+            if (args.notFound) args.notFound();
+        };
         return restServiceHandler(context);
     }
 }

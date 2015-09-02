@@ -92,7 +92,7 @@ describe('config.js', function () {
 
         describe('config reader', function () {
             var sut, usecaseAdapterFactory;
-            var success;
+            var success, notFound;
 
             beforeEach(inject(function (_configReader_, _usecaseAdapterFactory_) {
                 sut = _configReader_;
@@ -105,6 +105,9 @@ describe('config.js', function () {
                     key: 'K',
                     success: function (data) {
                         success = data
+                    },
+                    notFound: function () {
+                        notFound = true;
                     }
                 });
             }
@@ -190,6 +193,18 @@ describe('config.js', function () {
                     it('update value on config provider', function () {
                         expect(config['K']).toEqual('D');
                     });
+                });
+            });
+
+            describe('on not found', function () {
+                beforeEach(function () {
+                    execute();
+
+                    request().notFound();
+                });
+
+                it('notFound handler is executed', function () {
+                    expect(notFound).toBeTruthy();
                 });
             });
         });
