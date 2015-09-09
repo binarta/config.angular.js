@@ -161,13 +161,14 @@ function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer,
 
                 editModeRenderer.open({
                     template: '<form ng-submit="save(config)">' +
+                    '<div class="bin-menu-edit-body">' +
                     '<div class="form-group">' +
                     '<label i18n read-only code="config.{{key}}.label" for="configEntry">{{var}}</label>' +
                     '<input type="{{inputType}}" id="configEntry" ng-model="config.value">' +
                     '<small i18n read-only code="config.{{key}}.info"><i class="fa fa-info-circle"></i> <span ng-bind-html="var"></span></small>' +
                     '</div>' +
-
-                    '<div class="dropdown-menu-buttons">' +
+                    '</div>' +
+                    '<div class="bin-menu-edit-actions">' +
                     '<button type="submit" class="btn btn-primary" i18n code="clerk.menu.save.button" read-only>{{var}}</button>' +
                     '<button type="reset" class="btn btn-default" ng-click="close()" i18n code="clerk.menu.cancel.button" read-only>{{var}}</button>' +
                     '</div>' +
