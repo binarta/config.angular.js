@@ -71,7 +71,7 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
             url: config.baseUri + 'api/config',
             data: {
                 id: args.key,
-                value: args.value || '',
+                value: !angular.isUndefined(args.value) ? args.value : '',
                 scope: args.scope || ''
             },
             withCredentials: true,

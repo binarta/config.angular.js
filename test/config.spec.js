@@ -270,6 +270,12 @@ describe('config.js', function () {
                 expect(request().params.data.scope).toEqual('');
             });
 
+            it('when value is 0', function () {
+                sut({value: 0});
+
+                expect(request().params.data.value).toEqual(0);
+            });
+
             describe('on success', function () {
                 beforeEach(function () {
                     execute();
