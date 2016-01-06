@@ -2,7 +2,8 @@
   "name": "binarta.config.angular",
   "main": [
     "./src/config.js",
-    "./less/config.less"
+    "./less/config.less",
+    "./metadata-system.json"
   ],
   "dependencies": {
     "angular": "1.3.*",

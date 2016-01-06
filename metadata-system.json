@@ -1,0 +1,20 @@
+{
+  "msgs":{
+    "nl": {
+      "config.application.email.label":"Ontvanger",
+      "config.application.email.info":"Naar dit e-mailadres zullen uw contactformulieren verstuurd worden."
+    },
+    "en": {
+      "config.application.email.label":"Recipient",
+      "config.application.email.info":"Your contact forms will be sent to this email address"
+    },
+    "fr": {
+      "config.application.email.label":"E-mail de réception",
+      "config.application.email.info":"Choisissez l'adresse e-mail à laquelle le formulaire de contact doit être envoyé"
+    },
+    "de": {
+      "config.application.email.label":"Empfänger",
+      "config.application.email.info":"Ihre Kontaktformulare werden an diese E-Mail-Adresse gesendet"
+    }
+  }
+}
