@@ -1,6 +1,5 @@
 describe('config.js', function () {
-    angular.module('testApp', function () {
-    })
+    angular.module('testApp', [])
         .config(function (configProvider) {
             configProvider.add({
                 key: 'value',
@@ -26,7 +25,7 @@ describe('config.js', function () {
 
         beforeEach(inject(function (_restServiceHandler_, _config_) {
             rest = _restServiceHandler_;
-            rest.andReturn({
+            rest.and.returnValue({
                 success: function () {}
             });
             config = _config_;
@@ -43,7 +42,7 @@ describe('config.js', function () {
         }));
 
         function request() {
-            return rest.calls[0].args[0];
+            return rest.calls.first().args[0];
         }
 
         describe('config provider', function () {
@@ -115,7 +114,7 @@ describe('config.js', function () {
             it('usecase adapter factory receives scope', function () {
                 execute();
 
-                expect(usecaseAdapterFactory.calls[0].args[0]).toEqual(scope);
+                expect(usecaseAdapterFactory.calls.first().args[0]).toEqual(scope);
             });
 
             it('rest service gets executed', function () {
@@ -233,7 +232,7 @@ describe('config.js', function () {
             it('usecase adapter factory receives scope', function () {
                 execute();
 
-                expect(usecaseAdapterFactory.calls[0].args[0]).toEqual(scope);
+                expect(usecaseAdapterFactory.calls.first().args[0]).toEqual(scope);
             });
 
             it('rest service gets executed', function () {
@@ -324,8 +323,8 @@ describe('config.js', function () {
             }));
 
             afterEach(function () {
-                configReader.reset();
-                configWriter.reset();
+                configReader.calls.reset();
+                configWriter.calls.reset();
             });
 
             describe('on init', function () {
@@ -334,14 +333,14 @@ describe('config.js', function () {
                 });
 
                 it('reader puts value on scope', function () {
-                    expect(configReader.calls[0].args[0].key).toEqual(key);
-                    expect(configReader.calls[0].args[0].$scope).toEqual(scope);
-                    expect(configReader.calls[0].args[0].scope).toEqual('public');
+                    expect(configReader.calls.first().args[0].key).toEqual(key);
+                    expect(configReader.calls.first().args[0].$scope).toEqual(scope);
+                    expect(configReader.calls.first().args[0].scope).toEqual('public');
                 });
 
                 describe('on config reader success', function () {
                     beforeEach(function () {
-                        configReader.calls[0].args[0].success({value: 'value'});
+                        configReader.calls.first().args[0].success({value: 'value'});
                     });
 
                     it('value is exposed on scope', function () {
@@ -356,7 +355,7 @@ describe('config.js', function () {
                     });
 
                     function writer() {
-                        return configWriter.calls[0].args[0];
+                        return configWriter.calls.first().args[0];
                     }
 
                     it('then writer is executed', function () {
@@ -389,8 +388,8 @@ describe('config.js', function () {
             });
 
             afterEach(function () {
-                configReader.reset();
-                configWriter.reset();
+                configReader.calls.reset();
+                configWriter.calls.reset();
             });
 
             it('restrict to classes attributes and elements', function () {
@@ -432,14 +431,14 @@ describe('config.js', function () {
                 });
 
                 it('config reader is called', function () {
-                    expect(configReader.calls[0].args[0].key).toEqual(key);
-                    expect(configReader.calls[0].args[0].$scope).toEqual(scope);
-                    expect(configReader.calls[0].args[0].scope).toEqual('s');
+                    expect(configReader.calls.first().args[0].key).toEqual(key);
+                    expect(configReader.calls.first().args[0].$scope).toEqual(scope);
+                    expect(configReader.calls.first().args[0].scope).toEqual('s');
                 });
 
                 describe('on config reader success', function () {
                     beforeEach(function () {
-                        configReader.calls[0].args[0].success({value: 'V'});
+                        configReader.calls.first().args[0].success({value: 'V'});
                     });
 
                     it('value is exposed on scope', function () {
@@ -458,11 +457,11 @@ describe('config.js', function () {
 
                 describe('and when click is fired', function () {
                     beforeEach(function () {
-                        editMode.bindEvent.calls[0].args[0].onClick();
+                        editMode.bindEvent.calls.first().args[0].onClick();
                     });
 
                     function renderer() {
-                        return editModeRenderer.open.calls[0].args[0];
+                        return editModeRenderer.open.calls.first().args[0];
                     }
 
                     it('template is passed to edit mode renderer', function () {
@@ -484,7 +483,7 @@ describe('config.js', function () {
                         });
 
                         it('then edit mode renderer is closed', function () {
-                            expect(editModeRenderer.close.calls[0]).toBeDefined();
+                            expect(editModeRenderer.close.calls.first()).toBeDefined();
                         });
                     });
 
@@ -494,7 +493,7 @@ describe('config.js', function () {
                         });
 
                         function writer() {
-                            return configWriter.calls[0].args[0];
+                            return configWriter.calls.first().args[0];
                         }
 
                         it('then writer is executed', function () {
@@ -506,12 +505,12 @@ describe('config.js', function () {
 
                         describe('and on success', function () {
                             beforeEach(function () {
-                                editModeRenderer.close.reset();
+                                editModeRenderer.close.calls.reset();
                                 writer().success();
                             });
 
                             it('renderer was closed', function () {
-                                expect(editModeRenderer.close.calls[0]).toBeDefined();
+                                expect(editModeRenderer.close.calls.first()).toBeDefined();
                             });
 
                             it('updated value was exposed on scope', function () {
