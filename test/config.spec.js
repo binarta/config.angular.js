@@ -139,8 +139,6 @@ describe('config.js', function () {
             });
 
             it('when config scope is provided it is passed', function () {
-                execute();
-
                 sut({
                     $scope: scope,
                     key: 'K',
@@ -162,6 +160,14 @@ describe('config.js', function () {
                         'X-Namespace': 'namespace'
                     }
                 });
+            });
+
+            it('$scope is optional', function () {
+                sut({
+                    key: 'K'
+                });
+
+                expect(usecaseAdapterFactory).not.toHaveBeenCalled();
             });
 
             describe('on success', function () {
@@ -273,6 +279,15 @@ describe('config.js', function () {
                 sut({value: 0});
 
                 expect(request().params.data.value).toEqual(0);
+            });
+
+            it('$scope is optional', function () {
+                sut({
+                    key: 'K',
+                    value: 'V'
+                });
+
+                expect(usecaseAdapterFactory).not.toHaveBeenCalled();
             });
 
             describe('on success', function () {

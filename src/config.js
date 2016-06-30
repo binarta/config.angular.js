@@ -39,7 +39,7 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
 
 function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) {
     return function (args) {
-        var context = usecaseAdapterFactory(args.$scope);
+        var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
         context.params = {
             method: 'GET',
             url: config.baseUri + 'api/entity/config/' + args.key,
@@ -65,7 +65,7 @@ function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) 
 
 function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) {
     return function (args) {
-        var context = usecaseAdapterFactory(args.$scope);
+        var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
         context.params = {
             method: 'POST',
             url: config.baseUri + 'api/config',
