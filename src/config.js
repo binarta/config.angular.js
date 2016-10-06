@@ -1,4 +1,4 @@
-angular.module('config', ['notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
+angular.module('config', ['binartajs-angular1', 'notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
     .provider('config', function configProvider() {
         var config = {};
         return {
@@ -13,7 +13,7 @@ angular.module('config', ['notifications', 'rest.client', 'angular.usecase.adapt
         };
     })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
-    .factory('configReader', ['restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
+    .factory('configReader', ['$log', 'binarta', 'restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
@@ -37,8 +37,11 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
     };
 }
 
-function ConfigReaderFactory(restServiceHandler, usecaseAdapterFactory, config) {
+function ConfigReaderFactory($log, binarta, restServiceHandler, usecaseAdapterFactory, config) {
     return function (args) {
+        if(args.scope == 'public')
+            $log.warn('@deprecated - ConfigReader() - use binarta.application.config.findPublic() instead!');
+
         var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
         context.params = {
             method: 'GET',
