@@ -4,6 +4,7 @@ module.exports = function(config) {
         frameworks:['jasmine'],
         files:[
             {pattern:'bower_components/angular/angular.js'},
+            {pattern:'bower_components/angular-route/angular-route.js'},
             {pattern:'bower_components/binartajs/src/binarta.js'},
             {pattern:'bower_components/binartajs/src/application.js'},
             {pattern:'bower_components/binartajs/src/gateways.inmem.js'},

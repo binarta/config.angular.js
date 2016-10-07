@@ -1,4 +1,4 @@
-angular.module('config', ['binartajs-angular1', 'notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
+angular.module('config', ['binarta-applicationjs-angular1', 'notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
     .provider('config', function configProvider() {
         var config = {};
         return {
@@ -14,7 +14,7 @@ angular.module('config', ['binartajs-angular1', 'notifications', 'rest.client', 
     })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['$log', 'binarta', 'restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
-    .factory('configWriter', ['usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
+    .factory('configWriter', ['binarta', 'usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
@@ -66,7 +66,7 @@ function ConfigReaderFactory($log, binarta, restServiceHandler, usecaseAdapterFa
     }
 }
 
-function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) {
+function ConfigWriterFactory(binarta, usecaseAdapterFactory, restServiceHandler, config) {
     return function (args) {
         var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
         context.params = {
@@ -83,6 +83,7 @@ function ConfigWriterFactory(usecaseAdapterFactory, restServiceHandler, config) 
             }
         };
         context.success = function (data) {
+            binarta.application.config.cache(args.key, args.value);
             if (args.scope == 'public') config[args.key] = args.value;
             if (args.success) args.success(data);
         };

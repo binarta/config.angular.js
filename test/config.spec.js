@@ -8,7 +8,7 @@ describe('config.js', function () {
             configProviderSpy = configProvider;
         });
 
-    var config, scope = {}, dispatcher, rest;
+    var binarta, config, scope = {}, dispatcher, rest;
     var configProviderSpy;
     var baseUri = 'B/';
 
@@ -23,7 +23,8 @@ describe('config.js', function () {
 
     describe('isolate injection', function () {
 
-        beforeEach(inject(function (_restServiceHandler_, _config_) {
+        beforeEach(inject(function (_binarta_, _restServiceHandler_, _config_) {
+            binarta = _binarta_;
             rest = _restServiceHandler_;
             rest.and.returnValue({
                 success: function () {}
@@ -297,7 +298,7 @@ describe('config.js', function () {
                     request().success('D')
                 });
 
-                it('test', function () {
+                it('then success handler receives config value', function () {
                     expect(success).toEqual('D');
                 });
 
@@ -305,20 +306,21 @@ describe('config.js', function () {
                     expect(config['K']).toBeUndefined();
                 });
 
-                describe('and config value is public', function () {
-                    beforeEach(function () {
-                        sut({
-                            $scope: scope,
-                            key: 'K',
-                            value: 'D',
-                            scope: 'public'
-                        });
-                        request().success();
-                    });
+                it('then binarta.application.config caches the key-value pair', function() {
+                    var spy = jasmine.createSpy('on-success-handler');
+                    binarta.application.config.findPublic('K', spy);
+                    expect(spy).toHaveBeenCalledWith('V');
+                });
 
-                    it('update value on config provider', function () {
-                        expect(config['K']).toEqual('D');
+                it('and config value is public update value on config provider', function () {
+                    sut({
+                        $scope: scope,
+                        key: 'K',
+                        value: 'D',
+                        scope: 'public'
                     });
+                    request().success();
+                    expect(config['K']).toEqual('D');
                 });
             });
         });
