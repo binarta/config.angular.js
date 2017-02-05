@@ -355,6 +355,7 @@ describe('config.js', function () {
                     expect(configReader.calls.first().args[0].scope).toEqual('public');
                 });
 
+
                 describe('on config reader success', function () {
                     beforeEach(function () {
                         configReader.calls.first().args[0].success({value: 'value'});
@@ -363,25 +364,43 @@ describe('config.js', function () {
                     it('value is exposed on scope', function () {
                         expect(scope.config).toEqual({value: 'value'});
                     });
-                });
 
-                describe('on submit', function () {
-                    beforeEach(function () {
-                        scope.config.value = 'new value';
-                        ctrl.submit();
+                    describe('and on submit', function () {
+                        beforeEach(function () {
+                            scope.config.value = 'new value';
+                            ctrl.submit();
+                        });
+
+
+                        it('then writer is executed', function () {
+                            expect(writer().$scope).toEqual(scope);
+                            expect(writer().key).toEqual(key);
+                            expect(writer().value).toEqual('new value');
+                            expect(writer().scope).toEqual('public');
+                        });
                     });
 
-                    function writer() {
-                        return configWriter.calls.first().args[0];
-                    }
+                    describe('and on submit with new value', function() {
+                        beforeEach(function() {
+                            ctrl.submit('new value');
+                        });
 
-                    it('then writer is executed', function () {
-                        expect(writer().$scope).toEqual(scope);
-                        expect(writer().key).toEqual(key);
-                        expect(writer().value).toEqual('new value');
-                        expect(writer().scope).toEqual('public');
+                        it('new value was exposed on scope', function() {
+                            expect(scope.config.value).toEqual('new value');
+                        });
+
+                        it('then writer is executed', function() {
+                            expect(writer().$scope).toEqual(scope);
+                            expect(writer().key).toEqual(key);
+                            expect(writer().value).toEqual('new value');
+                            expect(writer().scope).toEqual('public');
+                        })
                     });
                 });
+                function writer() {
+                    return configWriter.calls.first().args[0];
+                }
+
             });
         });
 
@@ -542,6 +561,51 @@ describe('config.js', function () {
 
                     expect(scope.inputType).toEqual('text');
                 })
+            });
+        });
+
+        describe('binToggle', function() {
+            var $componentController;
+            var bindings;
+            var component;
+            var capturedValue;
+
+            beforeEach(inject(function(_$componentController_) {
+                bindings = {
+                    value:'value',
+                    onChange:function(value) {
+                        capturedValue = value;
+                    }
+                };
+                $componentController = _$componentController_;
+                component = $componentController('binToggle', null, bindings);
+            }));
+
+            it('onOff can be configured', function() {
+                bindings.onOff = true;
+                component = $componentController('binToggle', null, bindings);
+                component.$onInit();
+                expect(component.onOff).toEqual(true);
+            });
+
+            describe('upon construction', function() {
+                beforeEach(function() {
+                    component.$onInit();
+                });
+
+                it('onOff defaults to false', function() {
+                    expect(component.onOff).toEqual(false);
+                });
+
+                describe('and change()', function() {
+                    beforeEach(function() {
+                        component.change();
+                    });
+
+                    it('then output function is called with available context', function() {
+                        expect(capturedValue).toEqual({value:component.value});
+                    })
+                });
             });
         });
 

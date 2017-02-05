@@ -1,4 +1,4 @@
-angular.module('config', ['binarta-applicationjs-angular1', 'notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
+angular.module('config', ['config.templates', 'binarta-applicationjs-angular1', 'notifications', 'rest.client', 'angular.usecase.adapter', 'checkpoint', 'toggle.edit.mode'])
     .provider('config', function configProvider() {
         var config = {};
         return {
@@ -18,6 +18,7 @@ angular.module('config', ['binarta-applicationjs-angular1', 'notifications', 're
     .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
+    .component('binToggle', new BinToggleComponent())
     .run(['config', '$http', function (config, $http) {
         if (config.namespace) $http.defaults.headers.common['X-Namespace'] = config.namespace;
     }]);
@@ -108,7 +109,8 @@ function BinConfigController($scope, configReader, configWriter) {
         });
     };
 
-    this.submit = function () {
+    this.submit = function (value) {
+        if (value !== undefined) $scope.config.value = value;
         configWriter({
             $scope: $scope,
             key: key,
@@ -221,4 +223,24 @@ function BinConfigIfDirectiveFactory(config, configReader) {
 
         }
     }
+}
+
+function BinToggleComponent() {
+    this.bindings = {
+        value: '<',
+        onChange: '&',
+        onOff: '<'
+    };
+    this.templateUrl = 'bin-toggle.html';
+    this.controller = [function() {
+        var self = this;
+
+        this.$onInit = function() {
+            if (this.onOff === undefined) this.onOff = false;
+        };
+
+        this.change = function() {
+            this.onChange({value: self.value})
+        }
+    }]
 }

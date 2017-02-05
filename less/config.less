@@ -1,0 +1,69 @@
+@import "../../binarta.style.guide/less/variables";
+
+.bin-toggle {
+  .checkbox-switch {
+    @switch-width: 60px;
+    @switch-height: @switch-width / 2;
+    @switch-padding: 2px;
+    @cm-input-background-gray-dark: #D3D3D3;
+
+    input[type="checkbox"] {
+      display: none;
+
+      & + label {
+        position: relative;
+        padding: @switch-padding;
+        margin: 0;
+        width: @switch-width;
+        height: @switch-height;
+        background-color: @cm-input-background-gray-dark;
+        border-radius: @switch-height;
+        cursor: pointer;
+
+        &:before,
+        &:after {
+          display: block;
+          position: absolute;
+          top: @switch-padding / 2;
+          left: @switch-padding / 2;
+          bottom: @switch-padding / 2;
+          content: "";
+        }
+
+        &:before {
+          right: @switch-padding / 2;
+          background-color: @bin-success;
+          border-radius: @switch-height;
+        }
+
+        &:after {
+          width: (@switch-width / 2) - @switch-padding;
+          background-color: #fff;
+          border-radius: 100%;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+      }
+
+      &:checked + label {
+        &:before {
+          background-color: @bin-success;
+        }
+        &:after {
+          margin-left: (@switch-width / 2);
+        }
+      }
+    }
+
+    &.checkbox-switch-on-off {
+      input[type="checkbox"] + label:before {
+        background-color: #ffffff;
+      }
+    }
+
+    & > span {
+      display: block;
+      margin-left: @switch-width + 10px;
+      line-height: 30px;
+    }
+  }
+}

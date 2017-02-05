@@ -2,6 +2,7 @@
   "name": "binarta.config.angular",
   "main": [
     "./src/config.js",
+    "./src/config-tpls-bootstrap3.js",
     "./less/config.less",
     "./metadata-system.json",
     "./sources.json"
@@ -12,7 +13,8 @@
     "binarta.notifications.angular": "1.*.*",
     "binarta.rest.client.angular": "0.*.*",
     "binarta.usecase.adapter.angular": "0.*.*",
-    "binarta.toggle.edit.mode.angular": "1.*.*"
+    "binarta.toggle.edit.mode.angular": "1.*.*",
+    "binarta.style.guide": "0.*.*"
   },
   "devDependencies": {
     "angular-mocks": "1.*.*",

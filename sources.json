@@ -1,5 +1,6 @@
 {
   "default": {
-    "config": "bower_components/binarta.config.angular/src/config.js"
+    "config": "bower_components/binarta.config.angular/src/config.js",
+    "config.templates":"bower_components/binarta.config.angular/src/config-tpls-bootstrap3.js"
   }
 }
