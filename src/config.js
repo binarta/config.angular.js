@@ -15,7 +15,7 @@ angular.module('config', ['config.templates', 'binarta-applicationjs-angular1', 
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
     .factory('configReader', ['$log', 'binarta', 'restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
     .factory('configWriter', ['binarta', 'usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
-    .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', BinConfigDirectiveFactory])
+    .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', 'binarta', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
     .component('binToggle', new BinToggleComponent())
@@ -40,7 +40,7 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
 
 function ConfigReaderFactory($log, binarta, restServiceHandler, usecaseAdapterFactory, config) {
     return function (args) {
-        if(args.scope == 'public')
+        if (args.scope == 'public')
             $log.warn('@deprecated - ConfigReader() - use binarta.application.config.findPublic() instead!');
 
         var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
@@ -120,7 +120,7 @@ function BinConfigController($scope, configReader, configWriter) {
     };
 }
 
-function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer, editMode) {
+function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer, editMode, binarta) {
     return {
         restrict: 'A',
         scope: true,
@@ -129,14 +129,22 @@ function BinConfigDirectiveFactory(configReader, configWriter, editModeRenderer,
             scope.scope = attrs.scope;
             scope.config = {};
             scope.inputType = attrs.inputType || 'text';
-            configReader({
-                $scope: scope,
-                key: attrs.key,
-                scope: attrs.scope,
-                success: function (data) {
-                    scope.config = data;
-                }
-            });
+
+            if (scope.scope == 'public')
+                binarta.schedule(function () {
+                    scope.$on('$destroy', binarta.application.config.observePublic(scope.key, function (value) {
+                        scope.config = {value: value};
+                    }).disconnect);
+                });
+            else
+                configReader({
+                    $scope: scope,
+                    key: attrs.key,
+                    scope: attrs.scope,
+                    success: function (data) {
+                        scope.config = data;
+                    }
+                });
 
             editMode.bindEvent({
                 scope: scope,
@@ -232,14 +240,14 @@ function BinToggleComponent() {
         onOff: '<'
     };
     this.templateUrl = 'bin-toggle.html';
-    this.controller = [function() {
+    this.controller = [function () {
         var self = this;
 
-        this.$onInit = function() {
+        this.$onInit = function () {
             if (this.onOff === undefined) this.onOff = false;
         };
 
-        this.change = function() {
+        this.change = function () {
             this.onChange({value: self.value})
         }
     }]
