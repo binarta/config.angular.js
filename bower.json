@@ -8,6 +8,7 @@
     "./sources.json"
   ],
   "dependencies": {
+    "binartajs": "systemconfig",
     "binartajs-angular1": "1.*.*",
     "binarta.angularx": "0.*.*",
     "binarta.notifications.angular": "1.*.*",
@@ -29,6 +30,7 @@
     "tests"
   ],
   "resolutions": {
+    "binartajs": "systemconfig",
     "angular": "1.5.*"
   }
 }
