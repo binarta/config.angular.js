@@ -20,6 +20,6 @@ module.exports = function(config) {
             {pattern:'src/**/*.js'},
             {pattern:'test/**/*.js'}
         ],
-        browsers:['Chrome']
+        browsers:['PhantomJS']
     });
 };
