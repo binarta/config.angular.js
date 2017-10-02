@@ -8,7 +8,7 @@ describe('config.js', function () {
             configProviderSpy = configProvider;
         });
 
-    var binarta, config, scope = {}, dispatcher, rest;
+    var $rootScope, binarta, config, scope = {}, dispatcher, rest, response;
     var configProviderSpy;
     var baseUri = 'B/';
 
@@ -22,12 +22,13 @@ describe('config.js', function () {
     beforeEach(module('testApp'));
 
     describe('isolate injection', function () {
-
-        beforeEach(inject(function (_binarta_, _restServiceHandler_, _config_) {
+        beforeEach(inject(function (_$rootScope_, _binarta_, _restServiceHandler_, _config_) {
+            $rootScope = _$rootScope_;
             binarta = _binarta_;
             rest = _restServiceHandler_;
             rest.and.returnValue({
-                success: function () {}
+                success: function () {
+                }
             });
             config = _config_;
             config.namespace = 'namespace';
@@ -40,6 +41,11 @@ describe('config.js', function () {
                     dispatcher[topic] = msg;
                 }
             };
+            response = jasmine.createSpyObj('response', ['success']);
+
+            binarta.application.gateway.updateApplicationProfile({supportedLanguages: ['en', 'nl']});
+            binarta.application.refresh();
+            binarta.application.setLocaleForPresentation('en');
         }));
 
         function request() {
@@ -97,9 +103,13 @@ describe('config.js', function () {
             beforeEach(inject(function (_configReader_, _usecaseAdapterFactory_) {
                 sut = _configReader_;
                 usecaseAdapterFactory = _usecaseAdapterFactory_;
+
+                binarta.application.gateway.addConfig({scope: 'public', id: 'K', value: 'P'});
+                binarta.application.gateway.addConfig({scope: 'system', id: 'K', value: 'S'});
+                binarta.application.refresh();
             }));
 
-            function execute() {
+            function readKnownSystemConfig() {
                 return sut({
                     $scope: scope,
                     key: 'K',
@@ -112,74 +122,63 @@ describe('config.js', function () {
                 });
             }
 
-            it('usecase adapter factory receives scope', function () {
-                execute();
-
-                expect(usecaseAdapterFactory.calls.first().args[0]).toEqual(scope);
-            });
-
-            it('rest service gets executed', function () {
-                execute();
-
-                expect(request().params).toEqual({
-                    method: 'GET',
-                    url: baseUri + 'api/entity/config/K',
-                    params: {
-                        treatInputAsId: true,
-                        scope: ''
-                    },
-                    withCredentials: true,
-                    headers: {
-                        'X-Namespace': 'namespace'
-                    }
-                });
-            });
-
-            it('rest service returns promise', function () {
-                execute().success();
-            });
-
-            it('when config scope is provided it is passed', function () {
-                sut({
+            function readUnknownSystemConfig() {
+                return sut({
                     $scope: scope,
-                    key: 'K',
-                    scope: 's',
+                    key: '-',
                     success: function (data) {
                         success = data
-                    }
-                });
-
-                expect(request().params).toEqual({
-                    method: 'GET',
-                    url: baseUri + 'api/entity/config/K',
-                    params: {
-                        treatInputAsId: true,
-                        scope: 's'
                     },
-                    withCredentials: true,
-                    headers: {
-                        'X-Namespace': 'namespace'
+                    notFound: function () {
+                        notFound = true;
                     }
                 });
-            });
+            }
 
-            it('$scope is optional', function () {
-                sut({
-                    key: 'K'
+            function readKnownPublicConfig() {
+                return sut({
+                    $scope: scope,
+                    scope: 'public',
+                    key: 'K',
+                    success: function (data) {
+                        success = data
+                    },
+                    notFound: function () {
+                        notFound = true;
+                    }
                 });
+            }
 
-                expect(usecaseAdapterFactory).not.toHaveBeenCalled();
+            function readUnknownPublicConfig() {
+                return sut({
+                    $scope: scope,
+                    scope: 'public',
+                    key: '-',
+                    success: function (data) {
+                        success = data
+                    },
+                    notFound: function () {
+                        notFound = true;
+                    }
+                });
+            }
+
+            it('service returns promise', function () {
+                var value;
+                readKnownSystemConfig().then(function (it) {
+                    value = it;
+                });
+                $rootScope.$digest();
+                expect(value).toEqual({data: {value: 'S'}});
             });
 
             describe('on success', function () {
                 beforeEach(function () {
-                    execute();
-
-                    request().success('D');
+                    readKnownSystemConfig();
                 });
 
                 it('payload is passed to success handler', function () {
-                    expect(success).toEqual('D');
+                    expect(success).toEqual({value: 'S'});
                 });
 
                 it('and config value is not public, value is not on config provider', function () {
@@ -187,30 +186,51 @@ describe('config.js', function () {
                 });
 
                 describe('and config value is public', function () {
-                    beforeEach(function () {
-                        sut({
-                            $scope: scope,
-                            key: 'K',
-                            scope: 'public'
-                        });
-                        request().success({value: 'D'});
+                    it('update value on config provider', function () {
+                        readKnownPublicConfig();
+                        expect(config['K']).toEqual('P');
                     });
 
-                    it('update value on config provider', function () {
-                        expect(config['K']).toEqual('D');
+                    it('resolves promise when known', function () {
+                        var value;
+                        readKnownPublicConfig().then(function (it) {
+                            value = it;
+                        });
+                        $rootScope.$digest();
+                        expect(value).toEqual({data: {value: 'P'}});
+                    });
+
+                    it('rejects promise when unknown', function () {
+                        var rejected = false;
+                        readUnknownPublicConfig().then(function () {
+                        }, function () {
+                            rejected = true;
+                        });
+                        $rootScope.$digest();
+                        expect(rejected).toBeTruthy();
+                    });
+
+                    it('notFound handler is executed when unknown', function () {
+                        readUnknownPublicConfig();
+                        expect(notFound).toBeTruthy();
                     });
                 });
             });
 
             describe('on not found', function () {
-                beforeEach(function () {
-                    execute();
-
-                    request().notFound();
+                it('notFound handler is executed', function () {
+                    readUnknownSystemConfig();
+                    expect(notFound).toBeTruthy();
                 });
 
-                it('notFound handler is executed', function () {
-                    expect(notFound).toBeTruthy();
+                it('promise is rejected', function () {
+                    var rejected = false;
+                    readUnknownSystemConfig().then(function () {
+                    }, function () {
+                        rejected = true;
+                    });
+                    $rootScope.$digest();
+                    expect(rejected).toBeTruthy();
                 });
             });
         });
@@ -219,12 +239,23 @@ describe('config.js', function () {
             var sut, usecaseAdapterFactory;
             var success;
 
-            function execute() {
+            function writeToPublicScope() {
                 return sut({
                     $scope: scope,
                     key: 'K',
                     value: 'V',
-                    scope: 'S',
+                    scope: 'public',
+                    success: function (data) {
+                        success = data
+                    }
+                });
+            }
+
+            function writeToSystemScope() {
+                return sut({
+                    $scope: scope,
+                    key: 'K',
+                    value: 'V',
                     success: function (data) {
                         success = data
                     }
@@ -236,50 +267,28 @@ describe('config.js', function () {
                 usecaseAdapterFactory = _usecaseAdapterFactory_;
             }));
 
-            it('usecase adapter factory receives scope', function () {
-                execute();
-
-                expect(usecaseAdapterFactory.calls.first().args[0]).toEqual(scope);
-            });
-
-            it('rest service gets executed', function () {
-                execute();
-
-                expect(request().params).toEqual({
-                    method: 'POST',
-                    url: baseUri + 'api/config',
-                    data: {
-                        id: 'K',
-                        value: 'V',
-                        scope: 'S'
-                    },
-                    withCredentials: true,
-                    headers: {
-                        'X-Namespace': 'namespace'
-                    }
-                })
-            });
-
-            it('rest service returns promise', function () {
-                execute().success();
-            });
-
-            it('when no scope is provided it defaults to empty', function () {
-                sut({
-                    $scope: scope,
-                    key: 'K',
-                    value: 'V',
-                    success: function (data) {
-                        success = data
-                    }
+            it('service returns promise for public scope', function () {
+                var value;
+                writeToPublicScope().then(function (it) {
+                    value = it;
                 });
-                expect(request().params.data.scope).toEqual('');
+                $rootScope.$digest();
+                expect(value).toEqual('V');
             });
 
-            it('when value is 0', function () {
-                sut({value: 0});
+            it('service returns promise for system scope', function () {
+                var value;
+                writeToSystemScope().then(function (it) {
+                    value = it;
+                });
+                $rootScope.$digest();
+                expect(value).toEqual('V');
+            });
 
-                expect(request().params.data.value).toEqual(0);
+            it('0 values can be stored in config and will not be considered as not found when reading', function () {
+                sut({key: 'K', value: 0});
+                binarta.application.config.findSystem('K', response);
+                expect(response.success).toHaveBeenCalledWith(0);
             });
 
             it('$scope is optional', function () {
@@ -291,22 +300,16 @@ describe('config.js', function () {
                 expect(usecaseAdapterFactory).not.toHaveBeenCalled();
             });
 
-            describe('on success', function () {
+            describe('on write to public success', function () {
                 beforeEach(function () {
-                    execute();
-
-                    request().success('D')
+                    writeToPublicScope();
                 });
 
                 it('then success handler receives config value', function () {
-                    expect(success).toEqual('D');
+                    expect(success).toEqual('V');
                 });
 
-                it('and config value is not public, value is not on config provider', function () {
-                    expect(config['K']).toBeUndefined();
-                });
-
-                it('then binarta.application.config caches the key-value pair', function() {
+                it('then binarta.application.config caches the key-value pair', function () {
                     var spy = jasmine.createSpy('on-success-handler');
                     binarta.application.config.findPublic('K', spy);
                     expect(spy).toHaveBeenCalledWith('V');
@@ -319,8 +322,21 @@ describe('config.js', function () {
                         value: 'D',
                         scope: 'public'
                     });
-                    request().success();
                     expect(config['K']).toEqual('D');
+                });
+            });
+
+            describe('on write to system success', function () {
+                beforeEach(function () {
+                    writeToSystemScope();
+                });
+
+                it('then success handler receives config value', function () {
+                    expect(success).toEqual('V');
+                });
+
+                it('value is not on config provider', function () {
+                    expect(config['K']).toBeUndefined();
                 });
             });
         });
@@ -380,16 +396,16 @@ describe('config.js', function () {
                         });
                     });
 
-                    describe('and on submit with new value', function() {
-                        beforeEach(function() {
+                    describe('and on submit with new value', function () {
+                        beforeEach(function () {
                             ctrl.submit('new value');
                         });
 
-                        it('new value was exposed on scope', function() {
+                        it('new value was exposed on scope', function () {
                             expect(scope.config.value).toEqual('new value');
                         });
 
-                        it('then writer is executed', function() {
+                        it('then writer is executed', function () {
                             expect(writer().$scope).toEqual(scope);
                             expect(writer().key).toEqual(key);
                             expect(writer().value).toEqual('new value');
@@ -397,6 +413,7 @@ describe('config.js', function () {
                         })
                     });
                 });
+
                 function writer() {
                     return configWriter.calls.first().args[0];
                 }
@@ -564,16 +581,16 @@ describe('config.js', function () {
             });
         });
 
-        describe('binToggle', function() {
+        describe('binToggle', function () {
             var $componentController;
             var bindings;
             var component;
             var capturedValue;
 
-            beforeEach(inject(function(_$componentController_) {
+            beforeEach(inject(function (_$componentController_) {
                 bindings = {
-                    value:'value',
-                    onChange:function(value) {
+                    value: 'value',
+                    onChange: function (value) {
                         capturedValue = value;
                     }
                 };
@@ -581,29 +598,29 @@ describe('config.js', function () {
                 component = $componentController('binToggle', null, bindings);
             }));
 
-            it('onOff can be configured', function() {
+            it('onOff can be configured', function () {
                 bindings.onOff = true;
                 component = $componentController('binToggle', null, bindings);
                 component.$onInit();
                 expect(component.onOff).toEqual(true);
             });
 
-            describe('upon construction', function() {
-                beforeEach(function() {
+            describe('upon construction', function () {
+                beforeEach(function () {
                     component.$onInit();
                 });
 
-                it('onOff defaults to false', function() {
+                it('onOff defaults to false', function () {
                     expect(component.onOff).toEqual(false);
                 });
 
-                describe('and change()', function() {
-                    beforeEach(function() {
+                describe('and change()', function () {
+                    beforeEach(function () {
                         component.change();
                     });
 
-                    it('then output function is called with available context', function() {
-                        expect(capturedValue).toEqual({value:component.value});
+                    it('then output function is called with available context', function () {
+                        expect(capturedValue).toEqual({value: component.value});
                     })
                 });
             });

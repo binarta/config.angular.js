@@ -13,8 +13,8 @@ angular.module('config', ['config.templates', 'binarta-applicationjs-angular1', 
         };
     })
     .directive('appConfig', ['config', 'topicMessageDispatcher', AppConfigDirectiveFactory])
-    .factory('configReader', ['$log', 'binarta', 'restServiceHandler', 'usecaseAdapterFactory', 'config', ConfigReaderFactory])
-    .factory('configWriter', ['binarta', 'usecaseAdapterFactory', 'restServiceHandler', 'config', ConfigWriterFactory])
+    .factory('configReader', ['$log', '$q', 'binarta', 'config', ConfigReaderFactory])
+    .factory('configWriter', ['$log', '$q', 'binarta', 'config', ConfigWriterFactory])
     .directive('binConfig', ['configReader', 'configWriter', 'editModeRenderer', 'editMode', 'binarta', BinConfigDirectiveFactory])
     .directive('binConfigIf', ['config', 'configReader', BinConfigIfDirectiveFactory])
     .controller('binConfigController', ['$scope', 'configReader', 'configWriter', BinConfigController])
@@ -38,57 +38,68 @@ function AppConfigDirectiveFactory(config, topicMessageDispatcher) {
     };
 }
 
-function ConfigReaderFactory($log, binarta, restServiceHandler, usecaseAdapterFactory, config) {
+function ConfigReaderFactory($log, $q, binarta, config) {
     return function (args) {
-        if (args.scope == 'public')
-            $log.warn('@deprecated - ConfigReader() - use binarta.application.config.findPublic() instead!');
-
-        var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
-        context.params = {
-            method: 'GET',
-            url: config.baseUri + 'api/entity/config/' + args.key,
-            params: {
-                treatInputAsId: true,
-                scope: args.scope || ''
-            },
-            withCredentials: true,
-            headers: {
-                'X-Namespace': config.namespace
+        $log.warn('@deprecated - ConfigReader() - use binarta.application.config.findPublic() or findSystem() instead!');
+        var d = $q.defer();
+        binarta.schedule(function () {
+            if (args.scope == 'public') {
+                binarta.application.config.findPublic(args.key, function (value) {
+                    var data = {value: value};
+                    var promiseData = {data: {value: value}};
+                    config[args.key] = value;
+                    if (value) {
+                        if (args.success)
+                            args.success(data);
+                        d.resolve(promiseData);
+                    } else {
+                        args.notFound();
+                        d.reject();
+                    }
+                });
+            } else {
+                binarta.application.config.findSystem(args.key, {
+                    success: function (value) {
+                        var data = {value: value};
+                        var promiseData = {data: {value: value}};
+                        if (value != '') {
+                            if (args.success) args.success(data);
+                            d.resolve(promiseData);
+                        } else {
+                            args.notFound();
+                            d.reject();
+                        }
+                    }
+                });
             }
-        };
-        context.success = function (data) {
-            if (args.scope == 'public') config[args.key] = data.value;
-            if (args.success) args.success(data);
-        };
-        context.notFound = function () {
-            if (args.notFound) args.notFound();
-        };
-        return restServiceHandler(context);
+        });
+        return d.promise;
     }
 }
 
-function ConfigWriterFactory(binarta, usecaseAdapterFactory, restServiceHandler, config) {
+function ConfigWriterFactory($log, $q, binarta, config) {
     return function (args) {
-        var context = args.$scope ? usecaseAdapterFactory(args.$scope) : {};
-        context.params = {
-            method: 'POST',
-            url: config.baseUri + 'api/config',
-            data: {
-                id: args.key,
-                value: !angular.isUndefined(args.value) ? args.value : '',
-                scope: args.scope || ''
-            },
-            withCredentials: true,
-            headers: {
-                'X-Namespace': config.namespace
-            }
-        };
-        context.success = function (data) {
-            binarta.application.config.cache(args.key, args.value);
-            if (args.scope == 'public') config[args.key] = args.value;
-            if (args.success) args.success(data);
-        };
-        return restServiceHandler(context);
+        $log.warn('@deprecated - ConfigWriter() - use binarta.application.config.addPublic() or addSystem() instead!');
+        var d = $q.defer();
+        binarta.schedule(function () {
+            var request = {id: args.key, value: args.value};
+            var response = {
+                success: function (it) {
+                    if (args.success) args.success(it);
+                    d.resolve(it);
+                }
+            };
+            if (args.scope == 'public') {
+                var delegate = response.success;
+                response.success = function (it) {
+                    config[args.key] = it;
+                    delegate(it);
+                };
+                binarta.application.config.addPublic(request, response);
+            } else
+                binarta.application.config.addSystem(request, response);
+        });
+        return d.promise;
     }
 }
 
