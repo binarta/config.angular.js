@@ -21,6 +21,10 @@ describe('config.js', function () {
     beforeEach(module('angular.usecase.adapter'));
     beforeEach(module('testApp'));
 
+    afterEach(function() {
+        sessionStorage.removeItem('binarta:config:K');
+    });
+
     describe('isolate injection', function () {
         beforeEach(inject(function (_$rootScope_, _binarta_, _restServiceHandler_, _config_) {
             $rootScope = _$rootScope_;
@@ -218,6 +222,11 @@ describe('config.js', function () {
             });
 
             describe('on not found', function () {
+                it('notFound handler is optional', function () {
+                    sut({key: '-'});
+                    sut({scope:'public', key: '-'});
+                });
+
                 it('notFound handler is executed', function () {
                     readUnknownSystemConfig();
                     expect(notFound).toBeTruthy();

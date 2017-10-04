@@ -53,7 +53,7 @@ function ConfigReaderFactory($log, $q, binarta, config) {
                             args.success(data);
                         d.resolve(promiseData);
                     } else {
-                        args.notFound();
+                        if(args.notFound) args.notFound();
                         d.reject();
                     }
                 });
@@ -66,7 +66,7 @@ function ConfigReaderFactory($log, $q, binarta, config) {
                             if (args.success) args.success(data);
                             d.resolve(promiseData);
                         } else {
-                            args.notFound();
+                            if (args.notFound) args.notFound();
                             d.reject();
                         }
                     }
