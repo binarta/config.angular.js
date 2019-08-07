@@ -1,4 +1,5 @@
 describe('config.js', function () {
+    angular.module('binarta-alljs-tpls-angular1', []);
     angular.module('testApp', [])
         .config(function (configProvider) {
             configProvider.add({
@@ -638,13 +639,17 @@ describe('config.js', function () {
     });
 
     describe('bin-config-if directive', function () {
-        var html, scope, config, $rootScope, $compile, node, contents, configReader, configReaderSpy;
+        var html, scope, config, $rootScope, $compile, node, contents, configReader, configReaderSpy, configReaderDeferred;
 
         beforeEach(function () {
             module(function ($provide) {
-                $provide.value('configReader', function (args) {
-                    configReaderSpy = args;
-                });
+                $provide.factory('configReader', ['$q', function ($q) {
+                    return function(args) {
+                        configReaderDeferred = $q.defer();
+                        configReaderSpy = args;
+                        return configReaderDeferred.promise;
+                    }
+                }]);
             });
         });
 
@@ -749,8 +754,7 @@ describe('config.js', function () {
             });
 
             it('retrieve from configReader', function () {
-                $compile(html)(scope);
-                scope.$apply();
+                node = $compile(html)(scope);
 
                 expect(configReaderSpy).toEqual({
                     $scope: scope,
@@ -758,6 +762,26 @@ describe('config.js', function () {
                     scope: 'public'
                 });
             });
+
+            it('does not trigger change detection before a value is retrieved', function() {
+                node = $compile(html)(scope);
+                checkContent();
+
+                hasNoTranscludedContent();
+
+                expect(configReaderSpy).toEqual({
+                    $scope: scope,
+                    key: 'key',
+                    scope: 'public'
+                });
+
+                config.key = 'new-value';
+                hasNoTranscludedContent();
+
+                configReaderDeferred.resolve();
+                checkContent();
+                hasTranscludedContent();
+            })
         });
     });
 });

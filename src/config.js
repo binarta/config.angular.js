@@ -223,25 +223,29 @@ function BinConfigIfDirectiveFactory(config, configReader) {
                     $scope: scope,
                     key: key,
                     scope: 'public'
-                });
+                }).finally(installWatch);
+            } else {
+                installWatch();
             }
 
-            scope.$watch(function () {
-                return strategy.evaluate(config[key]);
-            }, function (value) {
-                if (value) {
-                    transclude(function (clone, newScope) {
-                        childScope = newScope;
-                        childElement = clone;
-                        element.after(clone);
-                    });
-                } else {
-                    if (childElement) {
-                        childElement.remove();
-                        childScope.$destroy();
+            function installWatch() {
+                scope.$watch(function () {
+                    return strategy.evaluate(config[key]);
+                }, function (value) {
+                    if (value) {
+                        transclude(function (clone, newScope) {
+                            childScope = newScope;
+                            childElement = clone;
+                            element.after(clone);
+                        });
+                    } else {
+                        if (childElement) {
+                            childElement.remove();
+                            childScope.$destroy();
+                        }
                     }
-                }
-            });
+                });
+            }
             
             function ValueStrategy(expected) {
                 this.evaluate = function(value) {
