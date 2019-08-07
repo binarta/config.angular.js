@@ -648,6 +648,20 @@ describe('config.js', function () {
             });
         });
 
+        function hasTranscludedContent() {
+            expect(node.children().length).toBe(1);
+            expect(contents[1].firstChild.nodeValue).toEqual('transcluded content');
+        }
+
+        function hasNoTranscludedContent() {
+            expect(node.children().length).toBe(0);
+        }
+
+        function checkContent() {
+            scope.$apply();
+            contents = node.contents();
+        }
+
         beforeEach(inject(function (_config_, _$rootScope_, _$compile_) {
             config = _config_;
             $rootScope = _$rootScope_;
@@ -657,24 +671,63 @@ describe('config.js', function () {
             html = '<div><div bin-config-if="key" equals="\'new-value\'">{{"transcluded content"}}</div></div>';
         }));
 
+        describe('with expression', function() {
+            beforeEach(function() {
+                html = '<div><div bin-config-if="key" expression="$value == \'new-value\'">transcluded content</div></div>';
+            });
+
+            it('transcludes the content when the simple expression is true', function() {
+                config.key = 'new-value';
+                node = $compile(html)(scope);
+                checkContent();
+
+                hasTranscludedContent();
+            });
+
+            it('does not transclude the content when the simple expression is false', function() {
+                config.key = 'wrong-value';
+                node = $compile(html)(scope);
+                checkContent();
+
+                hasNoTranscludedContent();
+            });
+
+            it('transcludes the content when a complex expression is used', function() {
+                config.key = '';
+                html = '<div><div bin-config-if="key" expression="$value == \'\' || $value == \'true\'">transcluded content</div></div>';
+                node = $compile(html)(scope);
+                checkContent();
+
+                hasTranscludedContent();
+
+                config.key = 'false';
+                checkContent();
+
+                hasNoTranscludedContent();
+
+                config.key = 'true';
+                checkContent();
+
+                hasTranscludedContent();
+            });
+        });
+
         describe('true case', function () {
             beforeEach(function () {
                 config.key = 'new-value';
                 node = $compile(html)(scope);
-                scope.$apply();
-                contents = node.contents();
+                checkContent();
             });
 
             it('transcluded content is compiled', function () {
-                expect(node.children().length).toBe(1);
-                expect(contents[1].firstChild.nodeValue).toEqual('transcluded content');
+                hasTranscludedContent();
             });
 
             it('and value changed', function () {
                 config.key = 'changed';
                 scope.$apply();
 
-                expect(node.children().length).toBe(0);
+                hasNoTranscludedContent();
             });
         });
 
@@ -682,12 +735,11 @@ describe('config.js', function () {
             beforeEach(function () {
                 config.value = false;
                 node = $compile(html)(scope);
-                scope.$apply();
-                contents = node.contents();
+                checkContent();
             });
 
             it('no transcluded content', function () {
-                expect(node.children().length).toBe(0);
+                hasNoTranscludedContent();
             });
         });
 

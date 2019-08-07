@@ -213,7 +213,10 @@ function BinConfigIfDirectiveFactory(config, configReader) {
         link: function (scope, element, attrs, ctrl, transclude) {
             var key = attrs.binConfigIf;
             var value = attrs.equals;
+            var expression = attrs.expression;
             var childScope, childElement;
+
+            var strategy = expression != null ? new ExpressionStrategy(expression) : new ValueStrategy(value);
 
             if (config[key] == undefined) {
                 configReader({
@@ -224,7 +227,7 @@ function BinConfigIfDirectiveFactory(config, configReader) {
             }
 
             scope.$watch(function () {
-                return config[key] == scope.$eval(value);
+                return strategy.evaluate(config[key]);
             }, function (value) {
                 if (value) {
                     transclude(function (clone, newScope) {
@@ -239,7 +242,18 @@ function BinConfigIfDirectiveFactory(config, configReader) {
                     }
                 }
             });
-
+            
+            function ValueStrategy(expected) {
+                this.evaluate = function(value) {
+                    return value == scope.$eval(expected);
+                }
+            }
+            
+            function ExpressionStrategy(expression) {
+                this.evaluate = function(value) {
+                    return scope.$eval(expression, {$value: value});
+                }
+            }
         }
     }
 }
